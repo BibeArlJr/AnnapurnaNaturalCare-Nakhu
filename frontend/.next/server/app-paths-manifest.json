@@ -1,0 +1,10 @@
+{
+  "/admin/doctors/page": "app/admin/doctors/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/admin/blogs/page": "app/admin/blogs/page.js",
+  "/admin/messages/page": "app/admin/messages/page.js",
+  "/admin/gallery/page": "app/admin/gallery/page.js",
+  "/admin/packages/page": "app/admin/packages/page.js",
+  "/admin/appointments/page": "app/admin/appointments/page.js",
+  "/admin/departments/page": "app/admin/departments/page.js"
+}

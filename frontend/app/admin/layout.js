@@ -1,0 +1,122 @@
+"use client";
+
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import {
+  HomeIcon,
+  Squares2X2Icon,
+  UserGroupIcon,
+  CalendarDaysIcon,
+  NewspaperIcon,
+  PhotoIcon,
+  CubeIcon,
+  EnvelopeIcon,
+  ArrowRightOnRectangleIcon,
+} from '@heroicons/react/24/outline';
+import { useAuth } from '@/context/AuthContext';
+
+export default function AdminLayout({ children }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading, logout } = useAuth();
+
+  const navItems = [
+    { href: '/admin', label: 'Dashboard', icon: HomeIcon },
+    { href: '/admin/departments', label: 'Departments', icon: Squares2X2Icon },
+    { href: '/admin/doctors', label: 'Doctors', icon: UserGroupIcon },
+    { href: '/admin/appointments', label: 'Appointments', icon: CalendarDaysIcon },
+    { href: '/admin/blogs', label: 'Blog', icon: NewspaperIcon },
+    { href: '/admin/gallery', label: 'Gallery', icon: PhotoIcon },
+    { href: '/admin/packages', label: 'Packages', icon: CubeIcon },
+    { href: '/admin/messages', label: 'Messages', icon: EnvelopeIcon },
+  ];
+
+  const isLoginPage = pathname === '/admin/login';
+
+  useEffect(() => {
+    if (loading) return;
+    if (!isLoginPage && (!user || user.role !== 'admin')) {
+      router.push('/admin/login');
+    }
+  }, [user, loading, isLoginPage, router]);
+
+  if (!isLoginPage && (loading || (!user && !loading))) {
+    return <div className="p-6">Loading admin...</div>;
+  }
+
+  // Let the login page render without the dashboard shell
+  if (isLoginPage) {
+    return children;
+  }
+
+  const itemClasses = (route) =>
+    pathname === route ? 'bg-teal-600 text-white' : 'text-slate-300 hover:bg-slate-800';
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex">
+      {/* Sidebar */}
+      <aside className="hidden md:flex md:flex-col w-64 bg-slate-900 border-r border-slate-800">
+        <div className="h-16 flex items-center px-6 border-b border-slate-800">
+          <Link href="/admin" className="flex items-center gap-2">
+            <img
+              src="/images/logo.jpg"
+              alt="Logo"
+              className="h-9 w-9 rounded-md object-cover"
+            />
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold tracking-tight">Admin Panel</span>
+              <span className="text-xs text-slate-400">Annapurna Nature Cure</span>
+            </div>
+          </Link>
+        </div>
+
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${itemClasses(item.href)}`}
+              >
+                <Icon className="h-5 w-5" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="border-t border-slate-800 p-4">
+          <button
+            type="button"
+            onClick={logout}
+            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm bg-slate-800 hover:bg-slate-700 text-slate-200"
+          >
+            <ArrowRightOnRectangleIcon className="h-5 w-5" />
+            <span>Logout</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Main area */}
+      <div className="flex-1 flex flex-col">
+        <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-slate-800 bg-slate-900/80 backdrop-blur">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-400">Admin dashboard</p>
+            <h1 className="text-sm md:text-base font-semibold text-slate-50">
+              {navItems.find((n) => pathname.startsWith(n.href))?.label || 'Overview'}
+            </h1>
+          </div>
+          <div className="text-xs text-slate-300">
+            {user?.email ? `Logged in as ${user.email}` : ''}
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto bg-slate-950">
+          <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">{children}</div>
+        </main>
+      </div>
+    </div>
+  );
+}
