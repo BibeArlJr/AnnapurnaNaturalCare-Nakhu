@@ -4,7 +4,9 @@ const { uploadImage } = require('../services/cloudinary');
 
 exports.getAll = async (req, res) => {
   try {
-    const items = await Department.find();
+    const items = await Department.find({ isActive: { $ne: false } })
+      .select('name slug')
+      .sort({ name: 1 });
     return res.json({ success: true, data: items });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Server Error' });
@@ -26,6 +28,7 @@ exports.getOne = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Not Found' });
     }
 
+    console.log('Department detail response:', item);
     return res.json({ success: true, data: item });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Server Error' });
@@ -40,11 +43,19 @@ exports.create = async (req, res) => {
     if (imageData) {
       try {
         const uploadedUrl = await uploadImage(imageData);
-        payload.heroImage = uploadedUrl;
-        payload.image = uploadedUrl;
+        const url = uploadedUrl?.secure_url || uploadedUrl?.url;
+        payload.heroImage = url || payload.heroImage;
+        payload.image = url || payload.image;
       } catch (uploadErr) {
         return res.status(500).json({ success: false, message: 'Image upload failed' });
       }
+    }
+
+    if (payload.heroImage && typeof payload.heroImage === 'object') {
+      payload.heroImage = payload.heroImage.url || payload.heroImage.secure_url || '';
+    }
+    if (payload.image && typeof payload.image === 'object') {
+      payload.image = payload.image.url || payload.image.secure_url || '';
     }
 
     delete payload.imageData;
@@ -84,11 +95,19 @@ exports.update = async (req, res) => {
     if (imageData) {
       try {
         const uploadedUrl = await uploadImage(imageData);
-        payload.heroImage = uploadedUrl;
-        payload.image = uploadedUrl;
+        const url = uploadedUrl?.secure_url || uploadedUrl?.url;
+        payload.heroImage = url || payload.heroImage;
+        payload.image = url || payload.image;
       } catch (uploadErr) {
         return res.status(500).json({ success: false, message: 'Image upload failed' });
       }
+    }
+
+    if (payload.heroImage && typeof payload.heroImage === 'object') {
+      payload.heroImage = payload.heroImage.url || payload.heroImage.secure_url || '';
+    }
+    if (payload.image && typeof payload.image === 'object') {
+      payload.image = payload.image.url || payload.image.secure_url || '';
     }
 
     delete payload.imageData;

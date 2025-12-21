@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Container from "./Container";
 import {
   PhoneIcon,
   EnvelopeIcon,
@@ -18,7 +19,7 @@ export default function Footer() {
   return (
     <footer className="w-full bg-slate-900 text-gray-300 pt-10">
 
-      <div className="relative max-w-7xl mx-auto px-6">
+      <Container className="relative">
 
         {/* ============================
             ROW 1 — FOUR MAIN COLUMNS
@@ -30,7 +31,7 @@ export default function Footer() {
 
             {/* Logo */}
             <img
-              src="/images/logo.jpg"
+              src="/images/logo.png"
               alt="Logo"
               className="h-16 w-16 mx-auto md:mx-0 rounded-xl object-cover"
             />
@@ -182,11 +183,11 @@ export default function Footer() {
 
         </div>
 
-      </div>
+      </Container>
 
       {/* BOTTOM STRIP */}
       <div className="bg-slate-950 py-4 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-sm text-slate-400">
+        <Container className="flex flex-col sm:flex-row items-center justify-between text-sm text-slate-400">
           <p>© {year} Annapurna Nature Cure Hospital. All rights reserved.</p>
 
           <div className="flex items-center gap-4">
@@ -194,7 +195,7 @@ export default function Footer() {
             <Link href="#">Terms</Link>
             <Link href="/sitemap.xml">Sitemap</Link>
           </div>
-        </div>
+        </Container>
       </div>
 
     </footer>

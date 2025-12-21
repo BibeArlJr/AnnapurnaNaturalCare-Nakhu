@@ -16,3 +16,9 @@ body {
   color: #1e293b;
   font-family: 'Inter', sans-serif;
 }
+
+.blog-content img,
+.blog-content iframe,
+.blog-content video {
+  display: none !important;
+}

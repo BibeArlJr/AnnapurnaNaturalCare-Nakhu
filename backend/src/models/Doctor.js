@@ -25,10 +25,19 @@ const DoctorSchema = new mongoose.Schema(
     departmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Department', required: true },
     email: { type: String },
     phone: { type: String },
+    degree: { type: String },
     specialties: [{ type: String }],
     experienceYears: { type: Number, default: 0 },
     bio: { type: String },
+    description: { type: String },
     photo: { type: String },
+    medicalQualifications: [
+      {
+        degree: { type: String, required: true },
+        institution: { type: String },
+        year: { type: String },
+      },
+    ],
     schedule: [ScheduleSchema],
   },
   { timestamps: true }

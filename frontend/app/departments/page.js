@@ -1,4 +1,4 @@
-import DepartmentCard from '@/components/DepartmentCard';
+import DepartmentsGrid from '@/components/DepartmentsGrid';
 import { apiGet } from '@/lib/api';
 
 export const metadata = {
@@ -17,18 +17,18 @@ export default async function DepartmentsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold text-neutral-800 mb-6">Our Departments</h1>
+    <div className="min-h-screen bg-[#f5f8f4]">
+      <div className="max-w-6xl mx-auto px-6 py-16 md:py-20">
+        <header className="max-w-3xl mx-auto text-left md:text-center space-y-3">
+          <h1 className="text-3xl md:text-4xl font-semibold text-[#10231a]">
+            Our Departments
+          </h1>
+          <p className="text-base md:text-lg text-[#5a695e]">
+            Specialized care units designed for holistic healing
+          </p>
+        </header>
 
-      <div
-        className="
-    grid gap-6
-    grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4
-  "
-      >
-        {departments.map((dep) => (
-          <DepartmentCard key={dep._id} department={dep} />
-        ))}
+        <DepartmentsGrid departments={departments} />
       </div>
     </div>
   );

@@ -1,0 +1,4 @@
+/* FullCalendar specific overrides */
+.fc .fc-daygrid-event {
+  border-radius: 0.375rem;
+}

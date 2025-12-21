@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { PencilSquareIcon, TrashIcon, UserGroupIcon } from "@heroicons/react/24/solid";
+import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/solid";
 
 export default function DoctorCard({ doctor, onDelete }) {
   const deptName = doctor?.departmentId?.name || doctor?.department?.name || "Department";
@@ -10,21 +10,16 @@ export default function DoctorCard({ doctor, onDelete }) {
 
   return (
     <div className="bg-[#11151c] border border-white/10 rounded-xl p-5 hover:border-teal-600/40 transition shadow-sm">
-      <div className="flex items-center gap-4 mb-3">
-        <div className="h-14 w-14 rounded-full overflow-hidden border border-slate-800 bg-slate-900">
-          {doctor?.photo ? (
-            <img src={doctor.photo} alt={doctor.name} className="h-full w-full object-cover" />
-          ) : (
-            <div className="h-full w-full flex items-center justify-center text-slate-500">
-              <UserGroupIcon className="h-7 w-7" />
-            </div>
-          )}
-        </div>
-        <div className="min-w-0">
-          <h3 className="text-lg font-semibold text-white line-clamp-1">{doctor.name}</h3>
-          <p className="text-sm text-teal-300 line-clamp-1">{deptName}</p>
-          {experience && <p className="text-xs text-slate-400">Experience: {experience}</p>}
-        </div>
+      <img
+        src={doctor.photo || "/placeholder-doctor.png"}
+        alt={doctor.name}
+        className="w-full h-32 object-cover rounded-xl mb-3"
+        loading="lazy"
+      />
+      <div className="min-w-0 mb-2">
+        <h3 className="text-lg font-semibold text-white line-clamp-1">{doctor.name}</h3>
+        <p className="text-sm text-teal-300 line-clamp-1">{deptName}</p>
+        {experience && <p className="text-xs text-slate-400">Experience: {experience}</p>}
       </div>
 
       <p className="text-gray-400 text-sm line-clamp-3 mb-4">

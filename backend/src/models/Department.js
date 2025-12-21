@@ -14,6 +14,7 @@ const DepartmentSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     slug: { type: String, unique: true },
+    shortDescription: { type: String },
     description: { type: String },
     tagline: { type: String },
     services: [{ type: String }],

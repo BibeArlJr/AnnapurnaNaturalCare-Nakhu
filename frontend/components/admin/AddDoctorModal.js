@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Listbox } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import { apiGet, apiPost } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/errorMessage";
 
 export default function AddDoctorModal({ open, onClose, onSaved }) {
   const fileInputRef = useRef(null);
@@ -18,6 +19,7 @@ export default function AddDoctorModal({ open, onClose, onSaved }) {
     phone: "",
     departmentId: "",
     experience: "",
+    degree: "",
     about: "",
     imageData: "",
   });
@@ -38,6 +40,7 @@ export default function AddDoctorModal({ open, onClose, onSaved }) {
         phone: "",
         departmentId: "",
         experience: "",
+        degree: "",
         about: "",
         imageData: "",
       });
@@ -104,6 +107,7 @@ export default function AddDoctorModal({ open, onClose, onSaved }) {
         phone: form.phone,
         departmentId: form.departmentId,
         experience: form.experience,
+        degree: form.degree,
         bio: form.about,
         imageData: form.imageData,
       });
@@ -112,7 +116,7 @@ export default function AddDoctorModal({ open, onClose, onSaved }) {
       setTimeout(() => onClose?.(), 400);
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to save doctor");
+      alert(getApiErrorMessage(err, "Failed to save doctor"));
     } finally {
       setSubmitting(false);
     }
@@ -227,6 +231,16 @@ export default function AddDoctorModal({ open, onClose, onSaved }) {
                   onChange={handleInputChange}
                   className={inputClasses}
                   placeholder="10"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-slate-300">Degree</label>
+                <input
+                  name="degree"
+                  value={form.degree}
+                  onChange={handleInputChange}
+                  className={inputClasses}
+                  placeholder="e.g., MD, MBBS"
                 />
               </div>
             </div>

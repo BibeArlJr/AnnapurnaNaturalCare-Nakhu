@@ -1,10 +1,15 @@
-import GalleryForm from '@/components/GalleryForm';
+"use client";
+
+import { useRouter } from "next/navigation";
+import AddGalleryModal from "@/components/admin/AddGalleryModal";
 
 export default function NewGalleryPage() {
+  const router = useRouter();
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6">Add Media</h1>
-      <GalleryForm mode="create" />
-    </div>
+    <AddGalleryModal
+      open
+      onClose={() => router.push("/admin/gallery")}
+      onSaved={() => router.push("/admin/gallery")}
+    />
   );
 }

@@ -1,13 +1,16 @@
 import Link from "next/link";
-import { BuildingOfficeIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/solid";
+import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/solid";
 
 export default function DepartmentCardAdmin({ dept, onDelete }) {
   return (
     <div className="bg-[#11151c] border border-white/10 rounded-xl p-5 hover:border-teal-600/40 transition shadow-sm">
-      <div className="flex items-center gap-3 mb-3">
-        <BuildingOfficeIcon className="h-7 w-7 text-teal-400" />
-        <h3 className="text-lg font-semibold text-white">{dept.name}</h3>
-      </div>
+      <img
+        src={dept.image || dept.heroImage || "/placeholder.png"}
+        alt={dept.name}
+        className="w-full h-32 object-cover rounded-xl mb-3"
+        loading="lazy"
+      />
+      <h3 className="text-lg font-semibold text-white mb-2 line-clamp-1">{dept.name}</h3>
 
       <p className="text-gray-400 text-sm line-clamp-3 mb-4">
         {dept.description || "No description provided."}

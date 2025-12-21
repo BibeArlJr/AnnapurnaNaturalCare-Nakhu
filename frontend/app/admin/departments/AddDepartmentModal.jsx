@@ -2,18 +2,23 @@
 
 import { useEffect, useRef, useState } from "react";
 import { apiPost } from "@/lib/api";
+import dynamic from "next/dynamic";
+import "react-quill/dist/quill.snow.css";
+
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 export default function AddDepartmentModal({ open, onClose, onSaved }) {
   const fileInputRef = useRef(null);
   const [preview, setPreview] = useState(null);
   const [fileName, setFileName] = useState("");
+  const [file, setFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: "",
     tagline: "",
     description: "",
     isActive: true,
-    imageData: "",
+    image: "",
   });
 
   useEffect(() => {
@@ -23,10 +28,11 @@ export default function AddDepartmentModal({ open, onClose, onSaved }) {
         tagline: "",
         description: "",
         isActive: true,
-        imageData: "",
+        image: "",
       });
       setPreview(null);
       setFileName("");
+      setFile(null);
       setSubmitting(false);
     }
   }, [open]);
@@ -44,13 +50,9 @@ export default function AddDepartmentModal({ open, onClose, onSaved }) {
 
   function readFile(file) {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setForm((prev) => ({ ...prev, imageData: reader.result }));
-      setPreview(reader.result);
-      setFileName(file.name);
-    };
-    reader.readAsDataURL(file);
+    setFile(file);
+    setPreview(URL.createObjectURL(file));
+    setFileName(file.name);
   }
 
   function handleFileChange(e) {
@@ -64,12 +66,36 @@ export default function AddDepartmentModal({ open, onClose, onSaved }) {
     if (file) readFile(file);
   }
 
+  async function uploadToCloudinary(uploadFile) {
+    const formData = new FormData();
+    formData.append("image", uploadFile);
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("Upload failed");
+    const data = await res.json();
+    return data.url || data.secure_url;
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.name) return;
     setSubmitting(true);
     try {
-      await apiPost("/departments", form);
+      let uploadedUrl = form.image;
+      if (file) {
+        uploadedUrl = await uploadToCloudinary(file);
+        console.log("Submitting Department:", { image: uploadedUrl });
+      }
+      const payload = {
+        ...form,
+        image: uploadedUrl,
+        heroImage: uploadedUrl,
+      };
+      await apiPost("/departments", payload);
       onSaved?.();
       onClose?.();
     } catch (err) {
@@ -126,15 +152,22 @@ export default function AddDepartmentModal({ open, onClose, onSaved }) {
                 />
               </div>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-2">
               <label className="text-sm text-slate-300">Description</label>
-              <textarea
-                name="description"
+              <ReactQuill
+                theme="snow"
                 value={form.description}
-                onChange={handleInputChange}
-                rows={4}
-                className={`${inputClasses} resize-none`}
-                placeholder="Describe services, specialties, and care focus."
+                onChange={(value) => setForm((prev) => ({ ...prev, description: value }))}
+                placeholder="Write detailed department description..."
+                modules={{
+                  toolbar: [
+                    [{ header: [1, 2, 3, false] }],
+                    ["bold", "italic", "underline"],
+                    [{ list: "ordered" }, { list: "bullet" }],
+                    ["link"],
+                    ["clean"],
+                  ],
+                }}
               />
             </div>
           </div>

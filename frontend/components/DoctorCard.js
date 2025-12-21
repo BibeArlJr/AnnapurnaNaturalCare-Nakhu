@@ -1,15 +1,20 @@
 import Link from 'next/link';
 
-export default function DoctorCard({ doctor }) {
+export default function DoctorCard({ doctor, variant }) {
+  const isCompact = variant === 'compact';
+  const wrapperPadding = isCompact ? 'p-4' : 'p-5';
+  const imageSize = isCompact ? 'w-28 h-28' : 'w-36 h-36';
+  const ctaMargin = isCompact ? 'mt-3' : 'mt-4';
+
   return (
     <Link
       href={`/doctors/${doctor.slug}`}
-      className="
-        bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200
-        border border-neutral-200 p-6 flex flex-col items-center text-center
-      "
+      className={`
+        bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200
+        border border-neutral-200 flex flex-col items-center text-center ${wrapperPadding}
+      `}
     >
-      <div className="w-28 h-28 rounded-full bg-neutral-100 overflow-hidden mb-4 shadow-sm">
+      <div className={`${imageSize} rounded-full bg-neutral-100 overflow-hidden mb-4 shadow-sm`}>
         {doctor.photo || doctor.image ? (
           <img
             src={doctor.photo || doctor.image}
@@ -23,13 +28,15 @@ export default function DoctorCard({ doctor }) {
         )}
       </div>
 
-      <h3 className="text-lg font-semibold text-neutral-800 group-hover:text-primary-teal transition">
+      <h3 className="text-base font-semibold text-[#10231a] group-hover:text-primary-teal transition">
         {doctor.name}
       </h3>
 
-      <p className="text-sm text-neutral-500 mt-1">
-        {doctor.specialty || doctor.specialties?.[0] || ''}
-      </p>
+      {(doctor.specialty || doctor.specialties?.[0]) ? (
+        <p className="text-sm text-[#5a695e] mt-1">
+          {doctor.specialty || doctor.specialties?.[0]}
+        </p>
+      ) : null}
 
       {doctor.department?.name ? (
         <span
@@ -42,7 +49,7 @@ export default function DoctorCard({ doctor }) {
         </span>
       ) : null}
 
-      <span className="inline-block mt-4 text-primary-teal font-medium text-sm hover:underline">
+      <span className={`inline-block ${ctaMargin} text-primary-teal font-medium text-sm hover:underline`}>
         View Profile →
       </span>
     </Link>

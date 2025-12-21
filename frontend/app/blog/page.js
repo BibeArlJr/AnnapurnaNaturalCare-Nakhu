@@ -1,28 +1,37 @@
-import { apiGet } from '@/lib/api';
-import BlogCard from '@/components/BlogCard';
+import BlogHero from '@/components/blog/BlogHero';
+import BlogGrid from '@/components/blog/BlogGrid';
 
 export const metadata = {
-  title: 'Blog – Annapurna Hospital',
-  description: 'Health tips, hospital news, and articles from Annapurna Hospital.',
+  title: 'Health & Wellness Insights | Annapurna Nature Cure Hospital',
+  description: 'Articles by our doctors and therapists on natural healing.',
 };
 
-export default async function BlogListPage() {
-  let posts = [];
+export const revalidate = 0;
+
+// Server component: no framer-motion imports here.
+export default async function BlogPage() {
+  let blogs = [];
+
   try {
-    const res = await apiGet('/blogs?status=published');
-    posts = res.data || [];
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!baseUrl) throw new Error('API base URL not configured');
+
+    const res = await fetch(`${baseUrl}/blogs`, { cache: 'no-store' });
+    if (!res.ok) {
+      throw new Error(`Failed to fetch blogs (${res.status})`);
+    }
+    const data = await res.json();
+    blogs = data?.data || data || [];
   } catch (err) {
-    return <div className="p-6 text-red-600">Failed to load blog posts</div>;
+    blogs = [];
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Blog</h1>
+    <div className="bg-[#f5f8f4] min-h-screen">
+      <BlogHero />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {posts.map((p) => (
-          <BlogCard key={p._id} post={p} />
-        ))}
+      <div className="max-w-6xl mx-auto px-6 pb-16 md:pb-20">
+        <BlogGrid blogs={blogs} />
       </div>
     </div>
   );

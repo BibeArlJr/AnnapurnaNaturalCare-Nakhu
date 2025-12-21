@@ -1,69 +1,101 @@
 "use client";
 
 import Link from "next/link";
-import { PencilSquareIcon, TrashIcon, NewspaperIcon } from "@heroicons/react/24/solid";
-import dayjs from "dayjs";
+import { PencilSquareIcon, TrashIcon, PlayIcon } from "@heroicons/react/24/solid";
+
+function extractYouTubeID(url) {
+  try {
+    const u = new URL(url);
+    if (u.searchParams.get("v")) return u.searchParams.get("v");
+
+    // Handle youtu.be short links
+    const path = u.pathname.split("/");
+    return path[path.length - 1];
+  } catch {
+    return "";
+  }
+}
 
 export default function BlogCard({ post, onDelete }) {
-  const created = post?.createdAt ? dayjs(post.createdAt).format("MMM D, YYYY") : "";
-  const excerpt =
-    post?.shortDescription ||
-    (post?.content ? `${post.content.slice(0, 100)}${post.content.length > 100 ? "..." : ""}` : "");
-  const categoryName = post?.categoryId?.name || post?.category || "";
+  const { _id, title, categoryId, createdAt, images = [], videos = [], youtubeLinks = [], mediaUrl } = post;
+
+  function renderPreview() {
+    const primaryImage = images[0];
+    const primaryVideo = videos[0];
+    const primaryYoutube = youtubeLinks[0];
+    const legacyMedia = mediaUrl;
+
+    if (primaryImage || legacyMedia) {
+      return (
+        <img
+          src={primaryImage || legacyMedia}
+          className="h-36 w-full object-cover rounded-xl border border-slate-800"
+          alt="preview"
+        />
+      );
+    }
+
+    if (primaryVideo) {
+      return (
+        <video
+          src={primaryVideo}
+          className="h-36 w-full object-cover rounded-xl border border-slate-800"
+        />
+      );
+    }
+
+    if (primaryYoutube) {
+      const id = extractYouTubeID(primaryYoutube);
+      const src = id ? `https://www.youtube.com/embed/${id}` : primaryYoutube;
+      return (
+        <div className="relative h-36 w-full rounded-xl overflow-hidden border border-slate-800">
+          <iframe
+            className="absolute inset-0 w-full h-full"
+            src={src}
+            allowFullScreen
+          />
+        </div>
+      );
+    }
+
+    return <div className="h-36 bg-slate-800 rounded-xl" />;
+  }
 
   return (
-    <div className="relative bg-[#11151c] border border-white/10 rounded-xl p-5 hover:border-teal-600/40 transition shadow-sm">
-      <div className="absolute top-3 right-3 flex gap-2">
-        <Link
-          href={`/admin/blogs/${post._id}`}
-          className="p-2 rounded-md bg-slate-800 hover:bg-slate-700 transition"
-          title="Edit"
-        >
-          <PencilSquareIcon className="h-5 w-5 text-teal-300" />
+    <div className="rounded-2xl border border-white/10 bg-[#11151c] p-3 space-y-3 hover:border-teal-600/40 transition">
+      <Link href={`/admin/blogs/${_id}`}>
+        <div className="cursor-pointer">{renderPreview()}</div>
+      </Link>
+
+      <div className="space-y-1">
+        <Link href={`/admin/blogs/${_id}`}>
+          <p className="text-white font-semibold hover:text-teal-400 transition line-clamp-2">
+            {title}
+          </p>
         </Link>
-        <button
-          onClick={() => onDelete?.(post._id)}
-          className="p-2 rounded-md bg-slate-800 hover:bg-rose-700 transition"
-          title="Delete"
+        <p className="text-xs text-slate-400">
+          {categoryId?.name || "Uncategorized"}
+        </p>
+        <p className="text-[11px] text-slate-500">
+          {createdAt ? new Date(createdAt).toLocaleDateString() : ""}
+        </p>
+      </div>
+
+      <div className="flex justify-end items-center gap-2">
+        <Link
+          href={`/admin/blogs/${_id}`}
+          className="p-2 rounded-md bg-slate-800 hover:bg-slate-700 transition"
         >
-          <TrashIcon className="h-5 w-5 text-rose-300" />
+          <PencilSquareIcon className="h-4 w-4 text-teal-300" />
+        </Link>
+
+        <button
+          onClick={() => onDelete(_id)}
+          className="p-2 rounded-md bg-slate-800 hover:bg-rose-700 transition"
+        >
+          <TrashIcon className="h-4 w-4 text-rose-300" />
         </button>
       </div>
-
-      <div className="flex gap-4 mb-4">
-        <div className="h-20 w-28 rounded-lg overflow-hidden border border-slate-800 bg-slate-900 flex items-center justify-center">
-          {post?.coverImage ? (
-            <img src={post.coverImage} alt={post.title} className="h-full w-full object-cover" />
-          ) : (
-            <NewspaperIcon className="h-10 w-10 text-slate-600" />
-          )}
-        </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span
-              className={`text-xs px-2 py-1 rounded-full border ${
-                post.status === "published"
-                  ? "border-teal-500/50 bg-teal-600/10 text-teal-200"
-                  : "border-slate-600 bg-slate-800 text-slate-200"
-              }`}
-            >
-              {post.status || "draft"}
-            </span>
-            {categoryName && (
-              <span className="text-xs px-2 py-1 rounded-full bg-teal-600/15 text-teal-200 border border-teal-600/30">
-                {categoryName}
-              </span>
-            )}
-            {created && <span className="text-xs text-slate-500">Created {created}</span>}
-          </div>
-          <h3 className="text-lg font-semibold text-white line-clamp-1">{post.title}</h3>
-          {post?.category && (
-            <p className="text-xs text-teal-300 uppercase tracking-wide mt-1">{post.category}</p>
-          )}
-        </div>
-      </div>
-
-      <p className="text-gray-400 text-sm line-clamp-3">{excerpt || "No excerpt available."}</p>
     </div>
   );
 }

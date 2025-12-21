@@ -6,6 +6,7 @@ import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import { format } from "date-fns";
 import { apiGet, apiPost } from "@/lib/api";
 import AppDatePicker from "@/components/ui/DatePicker";
+import { getApiErrorMessage } from "@/lib/errorMessage";
 
 function Dropdown({ label, value, onChange, options = [], placeholder }) {
   const buttonStyles =
@@ -52,7 +53,7 @@ function Dropdown({ label, value, onChange, options = [], placeholder }) {
   );
 }
 
-export default function AddAppointmentModal({ open, onClose, onSaved }) {
+export default function AddAppointmentModal({ open, onClose, onSaved, initialData }) {
   const [doctors, setDoctors] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [form, setForm] = useState({
@@ -76,8 +77,19 @@ export default function AddAppointmentModal({ open, onClose, onSaved }) {
       fetchDoctors();
       fetchDepartments();
       setToast("");
+      setForm({
+        patientName: initialData?.patientName || "",
+        patientEmail: initialData?.patientEmail || "",
+        patientPhone: initialData?.patientPhone || "",
+        service: initialData?.service || "",
+        doctor: initialData?.doctor || "",
+        time: initialData?.time || "",
+        ampm: initialData?.time?.toUpperCase()?.includes("PM") ? "PM" : "AM",
+        message: initialData?.message || "",
+      });
+      setDate(initialData?.date ? new Date(initialData.date) : null);
     }
-  }, [open]);
+  }, [open, initialData]);
 
   useEffect(() => {
     if (!toast) return;
@@ -139,7 +151,7 @@ export default function AddAppointmentModal({ open, onClose, onSaved }) {
       setTimeout(() => onClose(), 500);
     } catch (err) {
       console.error(err);
-      alert("Error saving appointment");
+      alert(getApiErrorMessage(err, "Error saving appointment"));
     }
   }
 

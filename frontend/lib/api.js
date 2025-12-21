@@ -20,21 +20,23 @@ export async function apiGet(path) {
 }
 
 export async function apiPost(path, body) {
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
   const res = await fetch(`${BASE_URL}${path}`, {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body || {}),
+    headers: isFormData ? undefined : { 'Content-Type': 'application/json' },
+    body: isFormData ? body : JSON.stringify(body || {}),
   });
   return handleResponse(res);
 }
 
 export async function apiPut(path, body) {
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
   const res = await fetch(`${BASE_URL}${path}`, {
     method: 'PUT',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body || {}),
+    headers: isFormData ? undefined : { 'Content-Type': 'application/json' },
+    body: isFormData ? body : JSON.stringify(body || {}),
   });
   return handleResponse(res);
 }

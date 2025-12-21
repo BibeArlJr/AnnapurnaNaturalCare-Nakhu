@@ -10,6 +10,7 @@ const packageRoutes = require('./api/packageRoutes');
 const messageRoutes = require('./api/messageRoutes');
 const contactRoutes = require('./api/contactRoutes');
 const authRoutes = require('./api/authRoutes');
+const uploadRoutes = require('./uploadRoutes');
 
 const router = express.Router();
 
@@ -27,5 +28,6 @@ router.use('/packages', packageRoutes);
 router.use('/messages', messageRoutes);
 router.use('/contact', contactRoutes);
 router.use('/auth', authRoutes);
+router.use('/upload', uploadRoutes);
 
 module.exports = router;

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiPut } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/errorMessage";
 
 export default function EditCategoryModal({ open, onClose, category, onCategoryUpdated }) {
   const [form, setForm] = useState({ name: "", slug: "" });
@@ -44,7 +45,7 @@ export default function EditCategoryModal({ open, onClose, category, onCategoryU
       onCategoryUpdated?.(res?.data || res);
       onClose?.();
     } catch (err) {
-      alert(err.message || "Failed to update category");
+      alert(getApiErrorMessage(err, "Failed to update category"));
     } finally {
       setSubmitting(false);
     }

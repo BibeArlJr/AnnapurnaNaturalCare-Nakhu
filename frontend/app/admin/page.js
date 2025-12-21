@@ -12,6 +12,30 @@ import {
   PlusCircleIcon,
 } from "@heroicons/react/24/outline";
 
+function formatTime(t) {
+  if (!t) return "";
+
+  try {
+    const [h, m] = t.split(":");
+    let hour = parseInt(h, 10);
+    let suffix = "AM";
+
+    if (hour === 0) {
+      hour = 12;
+      suffix = "AM";
+    } else if (hour === 12) {
+      suffix = "PM";
+    } else if (hour > 12) {
+      hour = hour - 12;
+      suffix = "PM";
+    }
+
+    return `${hour}:${m} ${suffix}`;
+  } catch {
+    return t;
+  }
+}
+
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState({
     departmentsCount: 0,

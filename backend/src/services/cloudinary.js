@@ -6,12 +6,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-async function uploadImage(imageData, folder = 'departments') {
-  if (!imageData) return null;
-  const res = await cloudinary.uploader.upload(imageData, {
-    folder,
-  });
-  return res;
+async function uploadImage(dataURI, folder, options = {}) {
+  // Accept optional folder/resource type to support both images and videos
+  const uploadOptions = { folder, ...options };
+  return cloudinary.uploader.upload(dataURI, uploadOptions);
 }
 
 async function deleteImage(publicId) {

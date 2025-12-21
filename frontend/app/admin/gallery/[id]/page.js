@@ -1,21 +1,36 @@
-import { apiGet } from '@/lib/api';
-import GalleryForm from '@/components/GalleryForm';
+"use client";
 
-export default async function EditGalleryPage({ params }) {
-  const { id } = params;
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { apiGet } from "@/lib/api";
+import AddGalleryModal from "@/components/admin/AddGalleryModal";
 
-  let item = null;
-  try {
-    const res = await apiGet(`/gallery/${id}`);
-    item = res.data;
-  } catch (err) {
-    return <div className="text-red-600">Media not found</div>;
-  }
+export default function EditGalleryPage({ params }) {
+  const router = useRouter();
+  const [item, setItem] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadItem() {
+      try {
+        const res = await apiGet(`/gallery/${params.id}`);
+        setItem(res?.data || res || null);
+      } catch (err) {
+        setError("Media not found");
+      }
+    }
+    loadItem();
+  }, [params.id]);
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6">Edit Media</h1>
-      <GalleryForm mode="edit" initialData={item} />
-    </div>
+    <AddGalleryModal
+      open
+      initialData={item}
+      onClose={() => router.push("/admin/gallery")}
+      onSaved={() => router.push("/admin/gallery")}
+      key={item?._id || "missing"}
+    >
+      {error && <div className="text-rose-400">{error}</div>}
+    </AddGalleryModal>
   );
 }

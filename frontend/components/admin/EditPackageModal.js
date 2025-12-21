@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { apiGet } from "@/lib/api";
+import MultiSelect from "@/components/ui/MultiSelect";
+import { getApiErrorMessage } from "@/lib/errorMessage";
 
 export default function EditPackageModal({ open, onClose, onSaved, pkg }) {
   const fileInputRef = useRef(null);
@@ -13,7 +15,7 @@ export default function EditPackageModal({ open, onClose, onSaved, pkg }) {
     shortDescription: "",
     longDescription: "",
     included: "",
-    departmentId: "",
+    departments: [],
   });
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -29,7 +31,7 @@ export default function EditPackageModal({ open, onClose, onSaved, pkg }) {
         shortDescription: pkg?.shortDescription || "",
         longDescription: pkg?.longDescription || "",
         included: (pkg?.included || []).join("\n"),
-        departmentId: pkg?.departmentId?._id || pkg?.departmentId || "",
+        departments: (pkg?.departments || []).map((d) => d?._id || d),
       });
       setFile(null);
       setPreview(pkg?.imageUrl || null);
@@ -52,6 +54,16 @@ export default function EditPackageModal({ open, onClose, onSaved, pkg }) {
   function handleChange(e) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function toggleDepartment(id) {
+    setForm((prev) => {
+      const exists = prev.departments.includes(id);
+      return {
+        ...prev,
+        departments: exists ? prev.departments.filter((d) => d !== id) : [...prev.departments, id],
+      };
+    });
   }
 
   function handleFileChange(e) {
@@ -82,7 +94,7 @@ export default function EditPackageModal({ open, onClose, onSaved, pkg }) {
       fd.append("shortDescription", form.shortDescription);
       fd.append("longDescription", form.longDescription);
       fd.append("included", form.included);
-      fd.append("departmentId", form.departmentId);
+      form.departments.forEach((dep) => fd.append("departments", dep));
       if (file) fd.append("image", file);
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/packages/${pkg?._id}`, {
@@ -90,11 +102,20 @@ export default function EditPackageModal({ open, onClose, onSaved, pkg }) {
         body: fd,
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to update package");
+      let data;
+      try {
+        data = await res.json();
+      } catch (_) {
+        data = null;
+      }
+      if (!res.ok) {
+        const message = getApiErrorMessage({ data }, "Failed to update package");
+        throw new Error(message);
+      }
       onSaved?.();
       onClose?.();
     } catch (err) {
-      alert(err.message || "Failed to update package");
+      alert(getApiErrorMessage(err, "Failed to update package"));
     } finally {
       setSubmitting(false);
     }
@@ -139,22 +160,12 @@ export default function EditPackageModal({ open, onClose, onSaved, pkg }) {
               <label className="text-sm text-slate-300">Duration</label>
               <input name="duration" value={form.duration} onChange={handleChange} className={inputClasses} />
             </div>
-            <div className="space-y-1">
-              <label className="text-sm text-slate-300">Department</label>
-              <select
-                name="departmentId"
-                value={form.departmentId}
-                onChange={handleChange}
-                className={inputClasses}
-              >
-                <option value="">Select department</option>
-                {departments.map((d) => (
-                  <option key={d._id} value={d._id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <MultiSelect
+              label="Departments"
+              options={departments}
+              selected={form.departments}
+              onChange={(newDepts) => setForm((prev) => ({ ...prev, departments: newDepts }))}
+            />
           </div>
 
           <div className="space-y-1">

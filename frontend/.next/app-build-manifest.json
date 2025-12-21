@@ -1,10 +1,19 @@
 {
   "pages": {
-    "/page": [
+    "/departments/[slug]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/page.css",
-      "static/chunks/app/page.js"
+      "static/chunks/app/departments/[slug]/page.js"
+    ],
+    "/departments/error": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/departments/error.js"
+    ],
+    "/departments/loading": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/departments/loading.js"
     ],
     "/layout": [
       "static/chunks/webpack.js",
@@ -22,10 +31,44 @@
       "static/chunks/main-app.js",
       "static/chunks/app/loading.js"
     ],
-    "/doctors/page": [
+    "/admin/blogs/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/doctors/page.js"
+      "static/css/app/admin/blogs/page.css",
+      "static/chunks/app/admin/blogs/page.js"
+    ],
+    "/admin/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/layout.js"
+    ],
+    "/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/page.js"
+    ],
+    "/admin/blogs/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/admin/blogs/[id]/page.css",
+      "static/chunks/app/admin/blogs/[id]/page.js"
+    ],
+    "/admin/departments/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/admin/departments/page.css",
+      "static/chunks/app/admin/departments/page.js"
+    ],
+    "/admin/departments/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/admin/departments/[id]/page.css",
+      "static/chunks/app/admin/departments/[id]/page.js"
+    ],
+    "/departments/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/departments/page.js"
     ],
     "/doctors/error": [
       "static/chunks/webpack.js",
@@ -37,30 +80,66 @@
       "static/chunks/main-app.js",
       "static/chunks/app/doctors/loading.js"
     ],
-    "/admin/layout": [
+    "/doctors/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/layout.js"
+      "static/chunks/app/doctors/page.js"
     ],
-    "/admin/departments/page": [
+    "/appointments/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/departments/page.js"
-    ],
-    "/admin/departments/new/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/departments/new/page.js"
+      "static/chunks/app/appointments/page.js"
     ],
     "/admin/doctors/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/admin/doctors/page.js"
     ],
+    "/admin/doctors/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/admin/doctors/[id]/page.css",
+      "static/chunks/app/admin/doctors/[id]/page.js"
+    ],
+    "/doctors/[slug]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/doctors/[slug]/page.js"
+    ],
+    "/blog/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/blog/page.js"
+    ],
+    "/blog/error": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/blog/error.js"
+    ],
+    "/blog/loading": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/blog/loading.js"
+    ],
+    "/blog/[slug]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/blog/[slug]/page.js"
+    ],
+    "/contact/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/contact/page.js"
+    ],
     "/admin/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/admin/page.js"
+    ],
+    "/about/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/about/page.js"
     ],
     "/admin/appointments/page": [
       "static/chunks/webpack.js",
@@ -68,25 +147,51 @@
       "static/css/app/admin/appointments/page.css",
       "static/chunks/app/admin/appointments/page.js"
     ],
-    "/admin/messages/page": [
+    "/admin/appointments/calendar/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/messages/page.js"
+      "static/css/app/admin/appointments/calendar/page.css",
+      "static/chunks/app/admin/appointments/calendar/page.js"
+    ],
+    "/admin/login/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/login/page.js"
+    ],
+    "/admin/gallery/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/gallery/page.js"
+    ],
+    "/gallery/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/gallery/page.js"
+    ],
+    "/gallery/error": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/gallery/error.js"
+    ],
+    "/gallery/loading": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/gallery/loading.js"
     ],
     "/admin/packages/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/admin/packages/page.js"
     ],
-    "/admin/blogs/page": [
+    "/admin/messages/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/blogs/page.js"
+      "static/chunks/app/admin/messages/page.js"
     ],
-    "/admin/gallery/page": [
+    "/gallery/[slug]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/gallery/page.js"
+      "static/chunks/app/gallery/[slug]/page.js"
     ]
   }
 }

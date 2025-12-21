@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/solid";
 import { apiPost } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/errorMessage";
 
 export default function AddCategoryModal({ open, onClose, onCategoryCreated }) {
   const [name, setName] = useState("");
@@ -19,7 +20,7 @@ export default function AddCategoryModal({ open, onClose, onCategoryCreated }) {
       onCategoryCreated?.();
       setName("");
     } catch (err) {
-      alert("Failed to create category");
+      alert(getApiErrorMessage(err, "Failed to create category"));
     }
 
     setLoading(false);

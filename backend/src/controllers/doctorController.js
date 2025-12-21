@@ -48,11 +48,20 @@ exports.create = async (req, res) => {
     if (imageData) {
       try {
         const uploadedUrl = await uploadImage(imageData, 'doctors');
-        payload.photo = uploadedUrl;
+        payload.photo = uploadedUrl?.secure_url || uploadedUrl?.url || payload.photo;
       } catch (err) {
         return res.status(500).json({ success: false, message: 'Image upload failed' });
       }
     }
+
+    if (payload.photo && typeof payload.photo === 'object') {
+      payload.photo = payload.photo.secure_url || payload.photo.url || '';
+    }
+
+    const qualifications = Array.isArray(payload.medicalQualifications) ? payload.medicalQualifications : [];
+    payload.medicalQualifications = qualifications
+      .map((q) => (typeof q === 'string' ? { degree: q } : q))
+      .filter((q) => q && q.degree);
 
     delete payload.imageData;
     delete payload.experience;
@@ -85,11 +94,20 @@ exports.update = async (req, res) => {
     if (imageData) {
       try {
         const uploadedUrl = await uploadImage(imageData, 'doctors');
-        payload.photo = uploadedUrl;
+        payload.photo = uploadedUrl?.secure_url || uploadedUrl?.url || payload.photo;
       } catch (err) {
         return res.status(500).json({ success: false, message: 'Image upload failed' });
       }
     }
+
+    if (payload.photo && typeof payload.photo === 'object') {
+      payload.photo = payload.photo.secure_url || payload.photo.url || '';
+    }
+
+    const qualifications = Array.isArray(payload.medicalQualifications) ? payload.medicalQualifications : [];
+    payload.medicalQualifications = qualifications
+      .map((q) => (typeof q === 'string' ? { degree: q } : q))
+      .filter((q) => q && q.degree);
 
     delete payload.imageData;
     delete payload.experience;

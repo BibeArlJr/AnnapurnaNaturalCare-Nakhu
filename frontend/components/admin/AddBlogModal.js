@@ -2,25 +2,34 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Listbox, Transition } from "@headlessui/react";
-import { PencilSquareIcon, CheckIcon, ChevronUpDownIcon } from "@heroicons/react/24/solid";
+import { CheckIcon, ChevronUpDownIcon, PencilSquareIcon } from "@heroicons/react/24/solid";
 import { apiGet, apiPost } from "@/lib/api";
 import AddCategoryModal from "@/components/admin/AddCategoryModal";
+import { getApiErrorMessage } from "@/lib/errorMessage";
+import dynamic from "next/dynamic";
+import "react-quill/dist/quill.snow.css";
+
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 export default function AddBlogModal({ open, onClose, onSaved }) {
   const fileInputRef = useRef(null);
-  const [preview, setPreview] = useState(null);
-  const [fileName, setFileName] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState("");
+  const videoInputRef = useRef(null);
   const [categories, setCategories] = useState([]);
+  const [showToast, setShowToast] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [videoPreviews, setVideoPreviews] = useState([]);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [videoFiles, setVideoFiles] = useState([]);
+  const [youtubeInput, setYoutubeInput] = useState("");
+  const [youtubeLinks, setYoutubeLinks] = useState([]);
   const [form, setForm] = useState({
     title: "",
     slug: "",
-    shortDescription: "",
-    content: "",
     categoryId: "",
-    status: "draft",
-    imageData: "",
+    content: "",
+    shortDescription: "",
   });
 
   const inputClasses =
@@ -31,25 +40,37 @@ export default function AddBlogModal({ open, onClose, onSaved }) {
       setForm({
         title: "",
         slug: "",
-        shortDescription: "",
-        content: "",
         categoryId: "",
-        status: "draft",
-        imageData: "",
+        content: "",
+        shortDescription: "",
       });
-      setPreview(null);
-      setFileName("");
-      setToast("");
+      setImagePreviews([]);
+      setVideoPreviews([]);
+      setImageFiles([]);
+      setVideoFiles([]);
+      setYoutubeLinks([]);
+      setYoutubeInput("");
       setSubmitting(false);
+      setShowToast("");
       loadCategories();
     }
   }, [open]);
 
   useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(""), 2500);
-    return () => clearTimeout(timer);
-  }, [toast]);
+    if (!showToast) return;
+    const t = setTimeout(() => setShowToast(""), 2200);
+    return () => clearTimeout(t);
+  }, [showToast]);
+
+  async function loadCategories() {
+    try {
+      const res = await apiGet("/blog/categories");
+      const data = res?.data || res || [];
+      setCategories(data);
+    } catch (err) {
+      console.error("Category fetch error:", err);
+    }
+  }
 
   function handleInputChange(e) {
     const { name, value } = e.target;
@@ -65,56 +86,53 @@ export default function AddBlogModal({ open, onClose, onSaved }) {
     setForm((prev) => ({ ...prev, title, slug }));
   }
 
-  function handleSlugChange(e) {
-    setForm((prev) => ({ ...prev, slug: e.target.value }));
+  function handleImageChange(e) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setImageFiles((prev) => [...prev, ...files]);
+    setImagePreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
   }
 
-  function readFile(file) {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setForm((prev) => ({ ...prev, imageData: reader.result }));
-      setPreview(reader.result);
-      setFileName(file.name);
-    };
-    reader.readAsDataURL(file);
+  function handleVideoChange(e) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setVideoFiles((prev) => [...prev, ...files]);
+    setVideoPreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
   }
 
-  function handleFileChange(e) {
-    const file = e.target.files?.[0];
-    if (file) readFile(file);
-  }
-
-  function handleDrop(e) {
-    e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    if (file) readFile(file);
+  function handleAddYoutube() {
+    const link = youtubeInput.trim();
+    if (!link) return;
+    setYoutubeLinks((prev) => Array.from(new Set([...prev, link])));
+    setYoutubeInput("");
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!form.title || !form.slug) {
-      alert("Title and slug are required.");
+    if (!form.title || !form.categoryId) {
+      alert("Title and category are required.");
       return;
     }
 
     setSubmitting(true);
     try {
-      await apiPost("/blogs", {
-        title: form.title,
-        slug: form.slug,
-        shortDescription: form.shortDescription,
-        content: form.content,
-        categoryId: form.categoryId,
-        status: form.status,
-        imageData: form.imageData,
-      });
-      setToast("Post created");
+      const fd = new FormData();
+      fd.append("title", form.title);
+      fd.append("slug", form.slug);
+      fd.append("categoryId", form.categoryId);
+      fd.append("content", form.content);
+      fd.append("shortDescription", form.shortDescription);
+      imageFiles.forEach((f) => fd.append("imageFiles", f));
+      videoFiles.forEach((f) => fd.append("videoFiles", f));
+      youtubeLinks.forEach((link) => fd.append("youtubeLinks", link));
+
+      await apiPost("/blogs", fd);
+
+      setShowToast("Post created");
       onSaved?.();
       setTimeout(() => onClose?.(), 400);
     } catch (err) {
-      console.error(err);
-      alert(err.message || "Failed to save blog");
+      alert(getApiErrorMessage(err, "Failed to save blog"));
     } finally {
       setSubmitting(false);
     }
@@ -122,22 +140,12 @@ export default function AddBlogModal({ open, onClose, onSaved }) {
 
   if (!open) return null;
 
-  async function loadCategories() {
-    try {
-      const res = await apiGet("/blog/categories");
-      const data = res?.data || res || [];
-      setCategories(data);
-    } catch (err) {
-      console.error("Category fetch error:", err);
-    }
-  }
-
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
       <div className="relative w-full max-w-4xl max-h-[90vh] bg-[#0d1218] border border-slate-800 rounded-2xl shadow-2xl flex flex-col">
-        {toast && (
+        {showToast && (
           <div className="absolute left-5 top-4 bg-teal-600/15 border border-teal-500/50 text-teal-200 px-3 py-2 rounded-lg text-sm shadow">
-            {toast}
+            {showToast}
           </div>
         )}
 
@@ -150,9 +158,7 @@ export default function AddBlogModal({ open, onClose, onSaved }) {
 
         <div className="px-6 pt-6 pb-3 border-b border-slate-800">
           <h2 className="text-xl font-semibold text-white">Add Blog Post</h2>
-          <p className="text-sm text-slate-400 mt-1">
-            Create a new article with cover image and publishing status.
-          </p>
+          <p className="text-sm text-slate-400 mt-1">Create a new article with media and publishing status.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 pb-6 pt-4 space-y-6">
@@ -177,22 +183,12 @@ export default function AddBlogModal({ open, onClose, onSaved }) {
                     name="slug"
                     required
                     value={form.slug}
-                    onChange={handleSlugChange}
+                    onChange={(e) => setForm((prev) => ({ ...prev, slug: e.target.value }))}
                     className={inputClasses}
                     placeholder="5-tips-for-better-sleep"
                   />
                   <PencilSquareIcon className="h-5 w-5 text-slate-500 absolute right-3 top-3.5" />
                 </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm text-slate-300">Short Description</label>
-                <input
-                  name="shortDescription"
-                  value={form.shortDescription}
-                  onChange={handleInputChange}
-                  className={inputClasses}
-                  placeholder="Brief summary for cards and previews."
-                />
               </div>
               <div className="space-y-1">
                 <label className="text-sm text-slate-300">Category</label>
@@ -247,94 +243,240 @@ export default function AddBlogModal({ open, onClose, onSaved }) {
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-sm text-slate-300">Status</label>
-                <Listbox
-                  value={form.status}
-                  onChange={(v) => setForm((prev) => ({ ...prev, status: v }))}
-                >
-                  <div className="relative mt-1">
-                    <Listbox.Button className="relative w-full cursor-pointer rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 pr-10 text-left text-white focus:outline-none focus:ring-2 focus:ring-teal-500">
-                      <span className="capitalize">{form.status}</span>
-                      <span className="absolute inset-y-0 right-0 flex items-center pr-3">
-                        <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
-                      </span>
-                    </Listbox.Button>
-                    <Listbox.Options className="absolute mt-2 max-h-60 w-full overflow-auto rounded-xl bg-slate-900 shadow-xl border border-slate-700 text-white focus:outline-none z-30">
-                      {["draft", "published"].map((option) => (
-                        <Listbox.Option
-                          key={option}
-                          value={option}
-                          className={({ active }) =>
-                            `cursor-pointer select-none px-4 py-2 ${
-                              active ? "bg-teal-700/70 text-white" : "text-gray-200"
-                            }`
-                          }
-                        >
-                          {({ selected }) => (
-                            <div className="flex items-center justify-between">
-                              <span className={selected ? "font-semibold capitalize" : "capitalize"}>
-                                {option}
-                              </span>
-                              {selected && <CheckIcon className="h-5 w-5 text-teal-300" />}
-                            </div>
-                          )}
-                        </Listbox.Option>
-                      ))}
-                    </Listbox.Options>
-                  </div>
-                </Listbox>
+                <label className="text-sm text-slate-300">Short Description</label>
+                <input
+                  name="shortDescription"
+                  value={form.shortDescription}
+                  onChange={handleInputChange}
+                  className={inputClasses}
+                  placeholder="Brief summary for cards and previews."
+                />
               </div>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-2">
               <label className="text-sm text-slate-300">Content</label>
-              <textarea
-                name="content"
+              <ReactQuill
+                theme="snow"
                 value={form.content}
-                onChange={handleInputChange}
-                rows={5}
-                className={`${inputClasses} resize-none`}
+                onChange={(value) => setForm((prev) => ({ ...prev, content: value }))}
                 placeholder="Write your post content..."
+                modules={{
+                  toolbar: [
+                    [{ header: [1, 2, 3, false] }],
+                    ["bold", "italic", "underline"],
+                    [{ list: "ordered" }, { list: "bullet" }],
+                    ["link"],
+                    ["clean"],
+                  ],
+                }}
               />
             </div>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm text-slate-300">Cover Image</p>
-                <p className="text-xs text-slate-500">Drag & drop or click to upload.</p>
+          <div className="space-y-4">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Media</p>
+
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-slate-300">Image Upload</p>
+                {imagePreviews.length > 0 && (
+                  <button
+                    type="button"
+                    className="text-xs text-rose-300 hover:text-rose-200"
+                    onClick={() => {
+                      setImageFiles([]);
+                      setImagePreviews([]);
+                    }}
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+              <div
+                className="border-2 border-dashed border-slate-700 bg-slate-900/40 rounded-xl p-4 flex flex-col gap-3 items-center justify-center text-slate-300 cursor-pointer hover:border-teal-500 transition"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const dropped = Array.from(e.dataTransfer.files || []).filter((f) =>
+                    f.type.startsWith("image/")
+                  );
+                  if (!dropped.length) return;
+                  setImageFiles((prev) => [...prev, ...dropped]);
+                  setImagePreviews((prev) => [...prev, ...dropped.map((f) => URL.createObjectURL(f))]);
+                }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  ref={fileInputRef}
+                  className="hidden"
+                  onChange={handleImageChange}
+                />
+                <div className="text-center space-y-1">
+                  <p className="font-medium">Drop an image here or click to upload</p>
+                  <p className="text-xs text-slate-500">JPG or PNG under 5MB. Multiple allowed.</p>
+                </div>
+                {imageFiles.length > 0 && (
+                  <p className="text-xs text-teal-300">
+                    {imageFiles.length} image{imageFiles.length > 1 ? "s" : ""} selected
+                  </p>
+                )}
+                {imagePreviews.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 w-full">
+                    {imagePreviews.map((src, idx) => (
+                      <div key={src} className="relative group">
+                        <img
+                          src={src}
+                          alt="Preview"
+                          className="w-full h-24 object-cover rounded-lg border border-slate-700"
+                        />
+                        <button
+                          type="button"
+                          className="absolute top-1 right-1 bg-black/70 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setImageFiles((prev) => prev.filter((_, i) => i !== idx));
+                            setImagePreviews((prev) => prev.filter((_, i) => i !== idx));
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
-            <div
-              className="border-2 border-dashed border-slate-700 bg-slate-900/40 rounded-xl p-4 flex flex-col gap-3 items-center justify-center text-slate-300 cursor-pointer hover:border-teal-500 transition"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                type="file"
-                accept="image/*"
-                ref={fileInputRef}
-                className="hidden"
-                onChange={handleFileChange}
-              />
-              <div className="text-center space-y-1">
-                <p className="font-medium">Drop an image here or click to upload</p>
-                <p className="text-xs text-slate-500">Recommended: landscape, under 5MB. JPG or PNG.</p>
+            {/* Video Upload */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-slate-300">Video Upload</p>
+                {videoPreviews.length > 0 && (
+                  <button
+                    type="button"
+                    className="text-xs text-rose-300 hover:text-rose-200"
+                    onClick={() => {
+                      setVideoFiles([]);
+                      setVideoPreviews([]);
+                    }}
+                  >
+                    Clear All
+                  </button>
+                )}
               </div>
-              {fileName && <p className="text-xs text-teal-300">Selected: {fileName}</p>}
-              {preview && (
-                <div className="w-full grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 items-center">
-                  <img
-                    src={preview}
-                    alt="Preview"
-                    className="w-full max-w-[220px] h-32 object-cover rounded-lg border border-slate-700"
-                  />
-                  <p className="text-sm text-slate-400">
-                    This preview will be uploaded to Cloudinary and saved with the blog post.
+              <div
+                className="border-2 border-dashed border-slate-700 bg-slate-900/40 rounded-xl p-4 flex flex-col gap-3 items-center justify-center text-slate-300 cursor-pointer hover:border-teal-500 transition"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const dropped = Array.from(e.dataTransfer.files || []).filter((f) =>
+                    f.type.startsWith("video/")
+                  );
+                  if (!dropped.length) return;
+                  setVideoFiles((prev) => [...prev, ...dropped]);
+                  setVideoPreviews((prev) => [...prev, ...dropped.map((f) => URL.createObjectURL(f))]);
+                }}
+                onClick={() => videoInputRef.current?.click()}
+              >
+                <input
+                  type="file"
+                  accept="video/*"
+                  multiple
+                  ref={videoInputRef}
+                  className="hidden"
+                  onChange={handleVideoChange}
+                />
+                <div className="text-center space-y-1">
+                  <p className="font-medium">Drop a video here or click to upload</p>
+                  <p className="text-xs text-slate-500">MP4, under 100MB. Multiple allowed.</p>
+                </div>
+                {videoFiles.length > 0 && (
+                  <p className="text-xs text-teal-300">
+                    {videoFiles.length} video{videoFiles.length > 1 ? "s" : ""} selected
                   </p>
+                )}
+                {videoPreviews.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                    {videoPreviews.map((src, idx) => (
+                      <div key={src} className="relative group">
+                        <video
+                          className="w-full rounded-lg border border-slate-700"
+                          controls
+                          src={src}
+                        />
+                        <button
+                          type="button"
+                          className="absolute top-2 right-2 bg-black/70 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setVideoFiles((prev) => prev.filter((_, i) => i !== idx));
+                            setVideoPreviews((prev) => prev.filter((_, i) => i !== idx));
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* YouTube Link */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-slate-300">YouTube Link</p>
+                {youtubeLinks.length > 0 && (
+                  <button
+                    type="button"
+                    className="text-xs text-rose-300 hover:text-rose-200"
+                    onClick={() => setYoutubeLinks([])}
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <input
+                  name="youtubeInput"
+                  value={youtubeInput}
+                  onChange={(e) => setYoutubeInput(e.target.value)}
+                  className={inputClasses}
+                  placeholder="Paste YouTube link"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddYoutube}
+                  className="px-4 py-2 rounded-lg bg-teal-600 text-white hover:bg-teal-500 transition"
+                >
+                  Add
+                </button>
+              </div>
+              {youtubeLinks.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {youtubeLinks.map((link) => (
+                    <div key={link} className="relative group w-full aspect-video bg-black/40 rounded-lg border border-slate-700 overflow-hidden">
+                      <iframe
+                        src={link}
+                        className="w-full h-full rounded-lg"
+                        title="YouTube preview"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                      <button
+                        type="button"
+                        className="absolute top-2 right-2 bg-black/70 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition"
+                        onClick={() => setYoutubeLinks((prev) => prev.filter((l) => l !== link))}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -361,9 +503,12 @@ export default function AddBlogModal({ open, onClose, onSaved }) {
       </div>
 
       <AddCategoryModal
-        open={false}
-        onClose={() => {}}
-        onCategoryCreated={() => {}}
+        open={showAddCategory}
+        onClose={() => setShowAddCategory(false)}
+        onCategoryCreated={() => {
+          setShowAddCategory(false);
+          loadCategories();
+        }}
       />
     </div>
   );

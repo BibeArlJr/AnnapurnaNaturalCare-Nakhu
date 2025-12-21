@@ -11,5 +11,8 @@ router.get('/:id', controller.getOne);
 router.put('/:id', authenticate, requireAdmin, controller.update);
 router.delete('/:id', authenticate, requireAdmin, controller.remove);
 router.patch('/:id/status', authenticate, requireAdmin, controller.updateStatus);
+router.put('/:id/reschedule', authenticate, requireAdmin, controller.reschedule);
+router.patch('/:id/reschedule', authenticate, requireAdmin, controller.reschedule);
+router.put('/:id/status', authenticate, requireAdmin, controller.updateStatus);
 
 module.exports = router;

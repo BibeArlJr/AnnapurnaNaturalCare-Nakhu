@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const Appointment = require('../models/Appointment');
 const Doctor = require('../models/Doctor');
+const Department = require('../models/Department');
+const { sendAppointmentEmail } = require('../utils/mailer');
 
 exports.createAppointment = async (req, res) => {
   try {
@@ -10,25 +12,63 @@ exports.createAppointment = async (req, res) => {
       patientPhone,
       service,
       doctor,
+      doctorId,
+      doctorName,
+      departmentId,
+      departmentName,
       date,
       time,
       message,
     } = req.body;
 
-    if (!patientName || !patientPhone || !doctor || !date || !time) {
+    if (!patientName || !patientPhone || !date) {
       return res.status(400).json({ message: 'Missing required fields.' });
     }
 
-    const appointment = await Appointment.create({
+    const payload = {
       patientName,
       patientEmail,
       patientPhone,
       service,
-      doctor,
+      doctor: doctorName || doctor,
+      doctorName: doctorName || doctor,
       date,
       time,
       message,
-    });
+    };
+
+    // attach department if provided
+    if (departmentId && mongoose.Types.ObjectId.isValid(departmentId)) {
+      payload.departmentId = departmentId;
+      if (!payload.departmentName) {
+        const dep = await Department.findById(departmentId);
+        if (dep) {
+          payload.departmentName = dep.name;
+          if (!payload.service) payload.service = dep.name;
+        }
+      }
+    }
+
+    // hydrate doctor data if doctorId provided
+    if (doctorId && mongoose.Types.ObjectId.isValid(doctorId)) {
+      const doc = await Doctor.findById(doctorId).populate('departmentId');
+      if (doc) {
+        payload.doctorId = doc._id;
+        payload.doctor = payload.doctor || doc.name;
+        payload.doctorName = payload.doctorName || doc.name;
+        if (!payload.departmentId && doc.departmentId?._id) {
+          payload.departmentId = doc.departmentId._id;
+        }
+        if (!payload.departmentName && doc.departmentId?.name) {
+          payload.departmentName = doc.departmentId.name;
+        }
+        if (!payload.service && doc.departmentId?.name) {
+          payload.service = doc.departmentId.name;
+        }
+      }
+    }
+
+    const appointment = await Appointment.create(payload);
 
     return res.status(201).json(appointment);
   } catch (err) {
@@ -58,7 +98,10 @@ exports.getAll = async (req, res) => {
   }
 
   try {
-    const items = await Appointment.find(query).sort({ createdAt: -1 });
+    const items = await Appointment.find(query)
+      .populate('doctorId', 'name')
+      .populate('departmentId', 'name')
+      .sort({ createdAt: -1 });
     return res.json({ success: true, data: items });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Server Error' });
@@ -176,9 +219,9 @@ exports.bookAppointment = async (req, res) => {
 
 exports.updateStatus = async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, adminMessage, notifyPatient } = req.body;
 
-  const allowedStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
+  const allowedStatuses = ['pending', 'confirmed', 'cancelled', 'completed', 'rescheduled'];
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ success: false, message: 'Invalid ID' });
@@ -189,16 +232,72 @@ exports.updateStatus = async (req, res) => {
   }
 
   try {
-    const appointment = await Appointment.findById(id);
+    const appointment = await Appointment.findByIdAndUpdate(
+      id,
+      { status, adminMessage },
+      { new: true }
+    );
     if (!appointment) {
       return res.status(404).json({ success: false, message: 'Not Found' });
     }
 
-    appointment.status = status;
-    await appointment.save();
+    const shouldNotify = notifyPatient !== false;
+    if (shouldNotify && appointment.patientEmail) {
+      try {
+        console.log('[updateStatus] sending email to', appointment.patientEmail);
+        await sendAppointmentEmail(appointment.patientEmail, appointment);
+      } catch (mailErr) {
+        console.error('Appointment email send failed:', mailErr);
+      }
+    }
 
     return res.json({ success: true, data: appointment });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
+exports.reschedule = async (req, res) => {
+  const { id } = req.params;
+  const { date, time, status, adminMessage, notifyPatient } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ success: false, message: 'Invalid ID' });
+  }
+
+  if (!date && !time) {
+    return res.status(400).json({ success: false, message: 'Date or time required' });
+  }
+
+  try {
+    const update = {};
+    if (date) update.date = date;
+    if (time) update.time = time;
+    if (status) update.status = status;
+    if (adminMessage) update.adminMessage = adminMessage;
+
+    const appointment = await Appointment.findByIdAndUpdate(id, update, { new: true });
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: 'Not Found' });
+    }
+
+    console.log('[reschedule] route hit', { id, date, time, status, notifyPatient: !!notifyPatient });
+
+    if (notifyPatient && appointment.patientEmail) {
+      try {
+        console.log('[reschedule] sending email to', appointment.patientEmail);
+        await sendAppointmentEmail(appointment.patientEmail, appointment);
+        console.log('[reschedule] email sent');
+      } catch (mailErr) {
+        console.error('Appointment email send failed:', mailErr);
+      }
+    }
+
+    return res.json({ success: true, data: appointment });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+// alias for clarity if needed
+exports.updateAppointmentStatus = exports.updateStatus;

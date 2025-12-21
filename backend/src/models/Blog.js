@@ -14,13 +14,18 @@ const BlogSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     slug: { type: String, unique: true },
-    coverImage: { type: String },
-    shortDescription: { type: String },
-    body: { type: String },
-    category: { type: String },
-    categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'BlogCategory' },
-    tags: [{ type: String }],
-    status: { type: String, enum: ['draft', 'published'], default: 'draft' },
+    categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'BlogCategory', required: false },
+    category: {
+      type: String,
+      enum: ['Wellness', 'Therapy', 'Rehab', 'Lifestyle', 'Ayurveda', 'Yoga'],
+      required: false,
+    },
+    images: { type: [String], default: [] },
+    videos: { type: [String], default: [] },
+    youtubeLinks: { type: [String], default: [] },
+    shortDescription: { type: String, default: '' },
+    content: { type: String },
+    createdAt: { type: Date },
   },
   { timestamps: true }
 );

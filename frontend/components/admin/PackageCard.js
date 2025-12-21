@@ -1,34 +1,38 @@
 "use client";
 
-import { PencilSquareIcon, TrashIcon, TagIcon } from "@heroicons/react/24/solid";
+import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/solid";
 
 export default function PackageCard({ pkg, onEdit, onDelete }) {
   return (
     <div className="bg-[#11151c] border border-white/10 rounded-xl p-4 hover:border-teal-600/40 transition shadow-sm">
-      <div className="flex gap-3 mb-3">
-        <div className="h-16 w-20 rounded-lg overflow-hidden border border-slate-800 bg-slate-900 flex items-center justify-center">
-          {pkg?.imageUrl ? (
-            <img src={pkg.imageUrl} alt={pkg.name} className="h-full w-full object-cover" />
-          ) : (
-            <TagIcon className="h-8 w-8 text-slate-600" />
-          )}
+      <img
+        src={pkg.imageUrl || "/placeholder-package.png"}
+        alt={pkg.name}
+        className="w-full h-32 object-cover rounded-xl mb-3"
+        loading="lazy"
+      />
+      <div className="min-w-0 mb-2">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-lg font-semibold text-white line-clamp-1">{pkg.name}</h3>
         </div>
-        <div className="min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-lg font-semibold text-white line-clamp-1">{pkg.name}</h3>
-          </div>
-          <p className="text-sm text-teal-300 font-semibold">
-            {pkg.price ? `$${pkg.price}` : "Price N/A"} {pkg.duration && `· ${pkg.duration}`}
-          </p>
-        </div>
+        <p className="text-sm text-teal-300 font-semibold">
+          {pkg.price ? `$${pkg.price}` : "Price N/A"} {pkg.duration && `· ${pkg.duration}`}
+        </p>
       </div>
 
       <p className="text-sm text-gray-400 line-clamp-3 mb-4">{pkg.shortDescription || "No description."}</p>
 
+      {Array.isArray(pkg.departments) && pkg.departments.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-3">
+          {pkg.departments.map((dep) => (
+            <span key={dep._id || dep} className="px-2 py-1 bg-slate-800 text-xs rounded text-slate-200 border border-slate-700">
+              {dep.name || dep}
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
-        <span className="text-xs text-slate-500 line-clamp-1">
-          {pkg.departmentId?.name ? `Dept: ${pkg.departmentId.name}` : "No department"}
-        </span>
         <div className="flex items-center gap-2">
           <button
             onClick={() => onEdit?.(pkg)}
