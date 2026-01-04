@@ -1,22 +1,41 @@
 "use client";
 
+"use client";
+
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiGet } from "@/lib/api";
 import MultiSelect from "@/components/ui/MultiSelect";
+import dynamic from "next/dynamic";
+import "react-quill/dist/quill.snow.css";
+
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 const inputClasses =
   "w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500";
 
+function makeSlug(val = "") {
+  return val
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-");
+}
+
 export default function EditPackagePage({ params }) {
   const router = useRouter();
   const fileInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [file, setFile] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
   const [preview, setPreview] = useState("");
+  const [galleryList, setGalleryList] = useState([]);
+  const [promoVideo, setPromoVideo] = useState("");
+  const [videoFile, setVideoFile] = useState(null);
   const [form, setForm] = useState({
     name: "",
     price: "",
@@ -25,6 +44,7 @@ export default function EditPackagePage({ params }) {
     longDescription: "",
     included: "",
     departments: [],
+    slug: "",
   });
 
   useEffect(() => {
@@ -35,7 +55,7 @@ export default function EditPackagePage({ params }) {
     setLoading(true);
     setError("");
     try {
-      const res = await apiGet(`/packages/${params.id}`);
+      const res = await apiGet(`/packages/${params.id}?includeDrafts=true`);
       const data = res?.data || res || {};
       setForm({
         name: data.name || "",
@@ -45,8 +65,12 @@ export default function EditPackagePage({ params }) {
         longDescription: data.longDescription || "",
         included: Array.isArray(data.included) ? data.included.join("\n") : data.included || "",
         departments: (data.departments || []).map((d) => d?._id || d),
+        slug: data.slug || makeSlug(data.name || ""),
       });
       setPreview(data.imageUrl || "");
+      setGalleryList((data.galleryImages || []).map((url) => ({ url, file: null })));
+      setPromoVideo(data.promoVideo || "");
+      setVideoFile(null);
       await loadDepartments();
     } catch (err) {
       setError("Package not found");
@@ -57,7 +81,7 @@ export default function EditPackagePage({ params }) {
 
   async function loadDepartments() {
     try {
-      const res = await apiGet("/departments");
+      const res = await apiGet("/departments?includeDrafts=true");
       const data = res?.data || res || [];
       setDepartments(data);
     } catch (err) {
@@ -67,6 +91,20 @@ export default function EditPackagePage({ params }) {
 
   function handleChange(e) {
     const { name, value } = e.target;
+    if (name === "name") {
+      const autoSlug = makeSlug(value);
+      setForm((prev) => {
+        const prevAuto = makeSlug(prev.name || "");
+        const shouldUpdateSlug = !prev.slug || prev.slug === prevAuto;
+        return { ...prev, name: value, slug: shouldUpdateSlug ? autoSlug : prev.slug };
+      });
+      return;
+    }
+    if (name === "slug") {
+      const cleaned = makeSlug(value);
+      setForm((prev) => ({ ...prev, slug: cleaned }));
+      return;
+    }
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
@@ -83,7 +121,7 @@ export default function EditPackagePage({ params }) {
   function handleFileChange(e) {
     const f = e.target.files?.[0];
     if (f) {
-      setFile(f);
+      setCoverFile(f);
       setPreview(URL.createObjectURL(f));
     }
   }
@@ -92,15 +130,36 @@ export default function EditPackagePage({ params }) {
     e.preventDefault();
     const f = e.dataTransfer.files?.[0];
     if (f) {
-      setFile(f);
+      setCoverFile(f);
       setPreview(URL.createObjectURL(f));
     }
+  }
+
+  function handleGalleryFiles(e) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setGalleryList((prev) => [...prev, ...files.map((file) => ({ url: URL.createObjectURL(file), file }))]);
+  }
+
+  function removeGallery(idx) {
+    setGalleryList((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function handleVideoFile(e) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setVideoFile(f);
+    setPromoVideo("");
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setSubmitting(true);
     try {
+      const finalSlug = (form.slug && form.slug.trim()) ? form.slug.trim() : makeSlug(form.name || "");
+      if (!finalSlug) {
+        throw new Error("Slug is required. Please check the name.");
+      }
       const fd = new FormData();
       fd.append("name", form.name);
       fd.append("price", form.price);
@@ -108,8 +167,27 @@ export default function EditPackagePage({ params }) {
       fd.append("shortDescription", form.shortDescription);
       fd.append("longDescription", form.longDescription);
       fd.append("included", form.included);
+      fd.append("slug", finalSlug);
       form.departments.forEach((dep) => fd.append("departments", dep));
-      if (file) fd.append("image", file);
+      if (coverFile) {
+        fd.append("coverImage", coverFile);
+      } else if (preview) {
+        fd.append("coverImage", preview);
+      }
+
+      galleryList
+        .filter((g) => !g.file)
+        .forEach((g) => fd.append("galleryImages", g.url));
+
+      galleryList
+        .filter((g) => g.file)
+        .forEach((g) => fd.append("galleryImages", g.file));
+
+      if (videoFile) {
+        fd.append("promoVideo", videoFile);
+      } else if (promoVideo) {
+        fd.append("promoVideo", promoVideo);
+      }
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/packages/${params.id}`, {
         method: "PUT",
@@ -161,6 +239,17 @@ export default function EditPackagePage({ params }) {
                   <input name="name" value={form.name} onChange={handleChange} className={inputClasses} required />
                 </div>
                 <div className="space-y-1">
+                  <label className="text-sm text-slate-300">Slug</label>
+                  <input
+                    name="slug"
+                    value={form.slug}
+                    onChange={handleChange}
+                    className={inputClasses}
+                    required
+                  />
+                  <p className="text-xs text-slate-500">Generated from name; you can adjust if needed.</p>
+                </div>
+                <div className="space-y-1">
                   <label className="text-sm text-slate-300">Price</label>
                   <input
                     type="number"
@@ -193,16 +282,16 @@ export default function EditPackagePage({ params }) {
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-sm text-slate-300">Long Description</label>
-                <textarea
-                  name="longDescription"
-                  value={form.longDescription}
-                  onChange={handleChange}
-                  rows={3}
-                  className={`${inputClasses} resize-none`}
-                />
-              </div>
+          <div className="space-y-2">
+            <label className="text-sm text-slate-300">Long Description</label>
+            <div className="bg-slate-900/40 border border-slate-700 rounded-xl">
+              <ReactQuill
+                theme="snow"
+                value={form.longDescription}
+                onChange={(val) => setForm((prev) => ({ ...prev, longDescription: val }))}
+              />
+            </div>
+          </div>
 
               <div className="space-y-1">
                 <label className="text-sm text-slate-300">Included (comma or new line)</label>
@@ -231,8 +320,8 @@ export default function EditPackagePage({ params }) {
                 />
                 {!preview ? (
                   <>
-                    <p className="font-medium">Drop an image here or click to upload</p>
-                    <p className="text-xs text-slate-500">PNG, JPG under 5MB</p>
+                    <p className="font-medium">Cover image</p>
+                    <p className="text-xs text-slate-500">Click or drop PNG/JPG</p>
                   </>
                 ) : (
                   <img
@@ -241,6 +330,58 @@ export default function EditPackagePage({ params }) {
                     className="w-full max-w-xs h-32 object-cover rounded-lg border border-slate-700"
                   />
                 )}
+              </div>
+
+              <div className="space-y-2 border border-slate-700 bg-slate-900/40 rounded-xl p-4">
+                <label className="text-sm text-slate-300">Promo video</label>
+                <input
+                  value={videoFile ? "" : promoVideo}
+                  onChange={(e) => {
+                    setPromoVideo(e.target.value);
+                    setVideoFile(null);
+                  }}
+                  placeholder="Paste video URL"
+                  className={inputClasses}
+                />
+                <input
+                  type="file"
+                  accept="video/*"
+                  onChange={handleVideoFile}
+                  className="text-sm text-slate-300"
+                />
+                {videoFile && <p className="text-xs text-teal-300">Video file ready to upload</p>}
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm text-slate-300">Gallery images</label>
+                <label
+                  className="border-2 border-dashed border-slate-700 bg-slate-900/40 rounded-xl p-4 flex flex-col items-center justify-center text-slate-300 cursor-pointer hover:border-teal-500 transition"
+                >
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleGalleryFiles}
+                    className="hidden"
+                  />
+                  <span className="font-medium">Click to upload or drop files</span>
+                  <span className="text-xs text-slate-500">PNG/JPG</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {galleryList.map((g, idx) => (
+                    <div key={idx} className="relative h-20 w-20 rounded-lg overflow-hidden border border-slate-700">
+                      <img src={g.url} className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeGallery(idx)}
+                        className="absolute top-1 right-1 bg-black/70 text-white rounded-full text-xs px-1"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </>
           )}

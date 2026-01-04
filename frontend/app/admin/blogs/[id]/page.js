@@ -50,7 +50,7 @@ export default function EditBlogPage({ params }) {
     setLoading(true);
     setError("");
     try {
-      const res = await apiGet(`/blogs/${params.id}`);
+      const res = await apiGet(`/blogs/${params.id}?includeDrafts=true`);
       const data = res?.data || res || {};
       setForm({
         title: data.title || "",

@@ -1,10 +1,18 @@
 const path = require('path');
-
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const dotenv = require('dotenv');
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
+
+dotenv.config({
+  path: path.resolve(__dirname, '../.env'),
+});
+
+console.log('ENV FILE LOADED?', !!process.env.PORT);
+console.log('STRIPE KEY PRESENT?', !!process.env.STRIPE_SECRET_KEY);
+console.log('FIRST 6 CHARS:', process.env.STRIPE_SECRET_KEY?.slice(0, 6));
+console.log('RUNNING FROM:', process.cwd());
 
 const connectDB = require('./config/db');
 const routes = require('./routes');

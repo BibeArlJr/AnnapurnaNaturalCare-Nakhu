@@ -8,6 +8,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.get('/', controller.getAll);
 router.get('/:id', controller.getOne);
+router.patch('/:id/status', authenticate, requireAdmin, controller.updateStatus);
 router.post(
   '/',
   authenticate,

@@ -1,8 +1,12 @@
-import { apiGet } from '@/lib/api';
-import Link from 'next/link';
-import DoctorCard from '@/components/DoctorCard';
+import { apiGet } from "@/lib/api";
+import Link from "next/link";
+import DoctorCard from "@/components/DoctorCard";
+import Container from "@/components/Container";
+import DepartmentMediaCarousel from "@/components/DepartmentMediaCarousel";
+import DepartmentVideoCarousel from "@/components/DepartmentVideoCarousel";
 
 export const revalidate = 0;
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
   try {
@@ -23,11 +27,23 @@ export async function generateMetadata({ params }) {
 export default async function DepartmentDetail({ params }) {
   const departmentRes = await apiGet(`/departments/${params.slug}`);
   const department = departmentRes.data;
-  console.log('Department detail data:', department);
+  const mediaImages = Array.from(
+    new Set(
+      [
+        department.coverImage,
+        department.heroImage,
+        department.image,
+        ...(department.images || []),
+      ]
+        .map((img) => (typeof img === "string" ? img : img?.url))
+        .filter(Boolean)
+    )
+  );
+  const videos = department.videos || [];
 
   let doctors = [];
   try {
-    const docRes = await apiGet(`/doctors?department=${department.slug}`);
+    const docRes = await apiGet(`/doctors?department=${department.slug}&status=published`);
     doctors = docRes.data || [];
   } catch (error) {
     doctors = [];
@@ -35,14 +51,11 @@ export default async function DepartmentDetail({ params }) {
 
   return (
     <div className="min-h-screen bg-[#f5f8f4]">
-      <div className="max-w-6xl mx-auto px-6 py-12 md:py-16 space-y-12">
+      <Container className="py-12 md:py-16 space-y-12">
         <section className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-          <div className="w-full aspect-[16/10] md:aspect-[4/3] max-h-[280px] rounded-xl overflow-hidden bg-[#e3ece6]">
-            <img
-              src={department.image || department.heroImage || department.coverImage || '/placeholder.png'}
-              alt={department.name}
-              className="w-full h-full object-cover"
-              loading="lazy"
+          <div className="w-full">
+            <DepartmentMediaCarousel
+              images={mediaImages.length ? mediaImages : ["/placeholder.png"]}
             />
           </div>
           <div className="space-y-3 self-center">
@@ -66,6 +79,14 @@ export default async function DepartmentDetail({ params }) {
           />
         </section>
 
+        {videos.length > 0 && (
+          <section className="bg-white rounded-2xl border border-[#cfe8d6] shadow-sm p-6 md:p-8 space-y-3">
+            <h2 className="text-2xl font-semibold text-[#10231a]">Department Videos</h2>
+            <p className="text-sm text-[#4c5f68]">Highlights and walkthroughs from our team.</p>
+            <DepartmentVideoCarousel videos={videos} />
+          </section>
+        )}
+
         <section className="space-y-4">
           <div>
             <h2 className="text-2xl font-semibold text-[#10231a]">Doctors in {department.name}</h2>
@@ -86,10 +107,10 @@ export default async function DepartmentDetail({ params }) {
             ))}
           </div>
         </section>
-      </div>
+      </Container>
 
       <section className="bg-gradient-to-r from-[#e3f2ea] via-[#d6ecf2] to-[#e3f2ea]">
-        <div className="max-w-5xl mx-auto px-6 py-14 md:py-16 text-center space-y-4">
+        <Container className="py-14 md:py-16 text-center space-y-4">
           <h3 className="text-2xl font-semibold text-[#10231a]">
             Consult our specialists in this department
           </h3>
@@ -102,7 +123,7 @@ export default async function DepartmentDetail({ params }) {
           >
             Book an Appointment
           </Link>
-        </div>
+        </Container>
       </section>
 
       <script
@@ -112,10 +133,10 @@ export default async function DepartmentDetail({ params }) {
             '@context': 'https://schema.org',
             '@type': 'MedicalDepartment',
             name: department.name,
-            description: department.description,
-          }),
-        }}
-      />
+      description: department.description,
+    }),
+  }}
+/>
     </div>
   );
 }

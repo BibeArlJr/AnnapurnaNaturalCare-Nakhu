@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { MagnifyingGlassIcon, NewspaperIcon, PlusIcon, TagIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/solid";
-import { apiGet, apiDelete } from "@/lib/api";
+import { apiGet, apiDelete, apiPatch } from "@/lib/api";
 import BlogCard from "@/components/admin/BlogCard";
 import AddBlogModal from "@/components/admin/AddBlogModal";
 import AddCategoryModal from "@/components/admin/AddCategoryModal";
@@ -23,12 +23,13 @@ export default function AdminBlogsPage() {
   const [showEditCategoryModal, setShowEditCategoryModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [toast, setToast] = useState("");
+  const [statusUpdatingId, setStatusUpdatingId] = useState(null);
 
   async function loadPosts() {
     setLoading(true);
     setError("");
     try {
-      const res = await apiGet("/blogs");
+      const res = await apiGet("/blogs?includeDrafts=true");
       const data = res?.data || res || [];
       setPosts(data);
       setFiltered(data);
@@ -99,6 +100,27 @@ export default function AdminBlogsPage() {
     const timer = setTimeout(() => setToast(""), 2200);
     return () => clearTimeout(timer);
   }, [toast]);
+
+  function syncStatus(id, status) {
+    setPosts((prev) => prev.map((p) => (p._id === id ? { ...p, status } : p)));
+    setFiltered((prev) => prev.map((p) => (p._id === id ? { ...p, status } : p)));
+  }
+
+  async function handleToggleStatus(post) {
+    const nextStatus = post.status === "published" ? "draft" : "published";
+    syncStatus(post._id, nextStatus);
+    setStatusUpdatingId(post._id);
+    try {
+      await apiPatch(`/blogs/${post._id}/status`, {
+        status: nextStatus,
+      });
+    } catch (err) {
+      syncStatus(post._id, post.status);
+      alert(err.message || "Failed to update status");
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -179,7 +201,13 @@ export default function AdminBlogsPage() {
           {!loading && filtered.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {filtered.map((post) => (
-                <BlogCard key={post._id} post={post} onDelete={handleDeletePost} />
+                <BlogCard
+                  key={post._id}
+                  post={post}
+                  onDelete={handleDeletePost}
+                  onToggleStatus={handleToggleStatus}
+                  updatingStatus={statusUpdatingId === post._id}
+                />
               ))}
             </div>
           )}

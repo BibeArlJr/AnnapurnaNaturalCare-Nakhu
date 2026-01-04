@@ -1,10 +1,13 @@
 import DepartmentsGrid from '@/components/DepartmentsGrid';
 import { apiGet } from '@/lib/api';
+import Container from '@/components/Container';
 
 export const metadata = {
   title: 'Departments – Annapurna Hospital',
   description: 'Browse medical departments and specialties at Annapurna Hospital.',
 };
+
+export const revalidate = 0;
 
 export default async function DepartmentsPage() {
   let departments = [];
@@ -18,7 +21,7 @@ export default async function DepartmentsPage() {
 
   return (
     <div className="min-h-screen bg-[#f5f8f4]">
-      <div className="max-w-6xl mx-auto px-6 py-16 md:py-20">
+      <Container className="py-16 md:py-20 space-y-8">
         <header className="max-w-3xl mx-auto text-left md:text-center space-y-3">
           <h1 className="text-3xl md:text-4xl font-semibold text-[#10231a]">
             Our Departments
@@ -29,7 +32,7 @@ export default async function DepartmentsPage() {
         </header>
 
         <DepartmentsGrid departments={departments} />
-      </div>
+      </Container>
     </div>
   );
 }

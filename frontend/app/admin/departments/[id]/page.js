@@ -14,12 +14,17 @@ const inputClasses =
 export default function EditDepartmentPage({ params }) {
   const router = useRouter();
   const fileInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
+  const videoInputRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [preview, setPreview] = useState("");
   const [imageData, setImageData] = useState("");
   const [fileName, setFileName] = useState("");
+  const [galleryFiles, setGalleryFiles] = useState([]);
+  const [videoFiles, setVideoFiles] = useState([]);
+  const [videoLinks, setVideoLinks] = useState("");
   const [form, setForm] = useState({
     name: "",
     tagline: "",
@@ -27,6 +32,9 @@ export default function EditDepartmentPage({ params }) {
     isActive: true,
     image: "",
     heroImage: "",
+    coverImage: "",
+    images: [],
+    videos: [],
   });
 
   useEffect(() => {
@@ -37,17 +45,20 @@ export default function EditDepartmentPage({ params }) {
     setLoading(true);
     setError("");
     try {
-      const res = await apiGet(`/departments/${params.id}`);
+      const res = await apiGet(`/departments/${params.id}?includeDrafts=true`);
       const data = res?.data || res || {};
       setForm({
         name: data.name || "",
         tagline: data.tagline || "",
         description: data.description || "",
         isActive: data.isActive ?? true,
-        image: data.image || data.heroImage || "",
-        heroImage: data.heroImage || data.image || "",
+        image: data.image || data.heroImage || data.coverImage || "",
+        heroImage: data.heroImage || data.image || data.coverImage || "",
+        coverImage: data.coverImage || data.heroImage || data.image || "",
+        images: data.images || [],
+        videos: data.videos || [],
       });
-      setPreview(data.image || data.heroImage || "");
+      setPreview(data.coverImage || data.image || data.heroImage || "");
     } catch (err) {
       setError("Department not found");
     } finally {
@@ -86,15 +97,81 @@ export default function EditDepartmentPage({ params }) {
     if (file) readFile(file);
   }
 
+  function handleGalleryChange(e) {
+    const files = Array.from(e.target.files || []);
+    const mapped = files.slice(0, 10 - ((form.images?.length || 0) + galleryFiles.length)).map((f) => ({
+      file: f,
+      preview: URL.createObjectURL(f),
+      name: f.name,
+    }));
+    setGalleryFiles((prev) => [...prev, ...mapped]);
+  }
+
+  function removeGalleryFile(idx) {
+    setGalleryFiles((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function handleVideoChange(e) {
+    const files = Array.from(e.target.files || []);
+    const mapped = files.map((f) => ({ file: f, name: f.name }));
+    setVideoFiles((prev) => [...prev, ...mapped]);
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setSubmitting(true);
     try {
+      const uploadFiles = async (files, folder) => {
+        if (!files?.length) return [];
+        const uploads = await Promise.all(
+          files.map(async (currentFile) => {
+            const fd = new FormData();
+            fd.append("image", currentFile);
+            if (folder) fd.append("folder", folder);
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
+              method: "POST",
+              body: fd,
+              credentials: "include",
+            });
+            if (!res.ok) throw new Error("Upload failed");
+            const data = await res.json();
+            return data.secure_url || data.url;
+          })
+        );
+        return uploads.filter(Boolean);
+      };
+
+      let coverImage = form.coverImage || form.image || form.heroImage;
+      if (imageData) {
+        // Base64 upload handled by API via imageData
+        coverImage = undefined;
+      }
+
+      let images = [...(form.images || [])];
+      if (galleryFiles.length) {
+        const urls = await uploadFiles(galleryFiles.map((g) => g.file), "departments");
+        images = [...images, ...urls].slice(0, 10);
+      }
+
+      let videos = [...(form.videos || [])];
+      const linkVideos = videoLinks
+        .split(/\n|,/)
+        .map((l) => l.trim())
+        .filter(Boolean);
+      videos = [...videos, ...linkVideos];
+      if (videoFiles.length) {
+        const urls = await uploadFiles(videoFiles.map((v) => v.file), "departments");
+        videos = [...videos, ...urls];
+      }
+
       const payload = {
         ...form,
         imageData: imageData || undefined,
-        heroImage: form.heroImage || form.image,
-        image: form.image,
+        heroImage: form.heroImage || form.image || coverImage,
+        image: form.image || coverImage,
+        coverImage: form.coverImage || coverImage,
+        images,
+        videos,
       };
       await apiPut(`/departments/${params.id}`, payload);
       router.push("/admin/departments");
@@ -241,6 +318,107 @@ export default function EditDepartmentPage({ params }) {
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-300">Gallery Images</p>
+                    <p className="text-xs text-slate-500">Add supporting visuals (up to 10).</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="px-3 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-100 hover:bg-slate-800"
+                  >
+                    Add images
+                  </button>
+                </div>
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleGalleryChange}
+                />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {galleryFiles.map((g, idx) => (
+                    <div
+                      key={`${g.name}-${idx}`}
+                      className="relative rounded-lg overflow-hidden border border-slate-700 bg-slate-900"
+                    >
+                      <img src={g.preview} alt={g.name} className="h-28 w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryFile(idx)}
+                        className="absolute top-1 right-1 rounded-full bg-black/60 text-white text-xs px-2 py-1"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  {(form.images || []).map((url, idx) => (
+                    <div
+                      key={`saved-${idx}`}
+                      className="relative rounded-lg overflow-hidden border border-slate-700 bg-slate-900"
+                    >
+                      <img src={url} alt={`Image ${idx + 1}`} className="h-28 w-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-300">Videos (optional)</p>
+                    <p className="text-xs text-slate-500">Upload files or paste URLs (one per line).</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => videoInputRef.current?.click()}
+                    className="px-3 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-100 hover:bg-slate-800"
+                  >
+                    Upload videos
+                  </button>
+                </div>
+                <textarea
+                  value={videoLinks}
+                  onChange={(e) => setVideoLinks(e.target.value)}
+                  placeholder="Paste video URLs – one per line"
+                  className={inputClasses}
+                  rows={3}
+                />
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleVideoChange}
+                />
+                {(videoFiles.length > 0 || form.videos?.length) && (
+                  <div className="space-y-2">
+                    {videoFiles.map((v, idx) => (
+                      <div key={`${v.name}-${idx}`} className="flex items-center justify-between text-xs text-slate-300">
+                        <span>{v.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setVideoFiles((prev) => prev.filter((_, i) => i !== idx))}
+                          className="text-rose-300 hover:text-rose-200"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    {form.videos?.map((v, idx) => (
+                      <div key={`existing-${idx}`} className="text-xs text-slate-400">
+                        {v}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </>
           )}

@@ -4,8 +4,19 @@ const { uploadImage } = require('../services/cloudinary');
 
 exports.getAll = async (req, res) => {
   try {
-    const items = await Department.find({ isActive: { $ne: false } })
-      .select('name slug')
+    const { status, includeDrafts } = req.query || {};
+    const query = { isActive: { $ne: false } };
+
+    if (includeDrafts === 'true' || status === 'all') {
+      // keep all statuses
+    } else if (status) {
+      query.status = status;
+    } else {
+      query.status = 'published';
+    }
+
+    const items = await Department.find(query)
+      .select('name slug image heroImage coverImage images videos shortDescription description tagline order isActive status')
       .sort({ name: 1 });
     return res.json({ success: true, data: items });
   } catch (error) {
@@ -19,12 +30,13 @@ exports.getOne = async (req, res) => {
   const { id } = req.params;
 
   try {
+    const includeDrafts = req.query?.includeDrafts === 'true' || req.query?.status === 'all';
     const isObjectId = mongoose.Types.ObjectId.isValid(id);
     const item = isObjectId
       ? await Department.findById(id)
       : await Department.findOne({ slug: id });
 
-    if (!item) {
+    if (!item || (!includeDrafts && item.status !== 'published')) {
       return res.status(404).json({ success: false, message: 'Not Found' });
     }
 
@@ -46,6 +58,7 @@ exports.create = async (req, res) => {
         const url = uploadedUrl?.secure_url || uploadedUrl?.url;
         payload.heroImage = url || payload.heroImage;
         payload.image = url || payload.image;
+        payload.coverImage = url || payload.coverImage;
       } catch (uploadErr) {
         return res.status(500).json({ success: false, message: 'Image upload failed' });
       }
@@ -56,6 +69,9 @@ exports.create = async (req, res) => {
     }
     if (payload.image && typeof payload.image === 'object') {
       payload.image = payload.image.url || payload.image.secure_url || '';
+    }
+    if (payload.coverImage && typeof payload.coverImage === 'object') {
+      payload.coverImage = payload.coverImage.url || payload.coverImage.secure_url || '';
     }
 
     delete payload.imageData;
@@ -98,6 +114,7 @@ exports.update = async (req, res) => {
         const url = uploadedUrl?.secure_url || uploadedUrl?.url;
         payload.heroImage = url || payload.heroImage;
         payload.image = url || payload.image;
+        payload.coverImage = url || payload.coverImage;
       } catch (uploadErr) {
         return res.status(500).json({ success: false, message: 'Image upload failed' });
       }
@@ -109,6 +126,9 @@ exports.update = async (req, res) => {
     if (payload.image && typeof payload.image === 'object') {
       payload.image = payload.image.url || payload.image.secure_url || '';
     }
+    if (payload.coverImage && typeof payload.coverImage === 'object') {
+      payload.coverImage = payload.coverImage.url || payload.coverImage.secure_url || '';
+    }
 
     delete payload.imageData;
 
@@ -119,6 +139,28 @@ exports.update = async (req, res) => {
     return res.json({ success: true, data: updated });
   } catch (error) {
     return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body || {};
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ success: false, message: 'Invalid ID' });
+  }
+  if (!['draft', 'published'].includes(status)) {
+    return res.status(400).json({ success: false, message: 'Invalid status' });
+  }
+
+  try {
+    const updated = await Department.findByIdAndUpdate(id, { status }, { new: true });
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Not Found' });
+    }
+    return res.json({ success: true, data: updated });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
 

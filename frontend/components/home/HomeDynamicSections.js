@@ -116,16 +116,16 @@ export default function HomeDynamicSections({ departments = [], doctors = [], pa
         {loading && departments.length === 0 ? (
           <SkeletonGrid count={6} />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-stretch">
             {departments.map((d) => (
               <motion.a
                 key={d._id}
                 href={`/departments/${d.slug || d._id}`}
-                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#070b12] transition hover:border-[#18a6a0]"
+                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#070b12] transition hover:border-[#18a6a0] h-full w-full min-h-[260px] flex flex-col"
                 variants={cardAnimation}
                 whileHover={{ scale: 1.01, y: -4 }}
               >
-                <div className="h-40 bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden">
+                <div className="h-40 w-full bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden flex-shrink-0">
                   {d.imageUrl && (
                     <img
                       src={d.imageUrl}
@@ -135,8 +135,8 @@ export default function HomeDynamicSections({ departments = [], doctors = [], pa
                   )}
                   <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/60 to-transparent" />
                 </div>
-                <div className="p-4 space-y-2">
-                  <p className="text-white font-semibold">{d.name}</p>
+                <div className="p-4 space-y-2 flex flex-col flex-1 justify-between min-h-[200px]">
+                  <p className="text-white font-semibold line-clamp-2 overflow-hidden text-ellipsis">{d.name}</p>
                   <p className="text-sm text-slate-300 line-clamp-3">
                     {d.description?.slice(0, 100) || d.shortDescription || "Discover more"}
                   </p>
@@ -219,7 +219,7 @@ export default function HomeDynamicSections({ departments = [], doctors = [], pa
                   {pkg.shortDescription || pkg.description || ""}
                 </p>
                 <p className="text-teal-300 font-semibold mb-4">
-                  {pkg.price ? `Rs. ${pkg.price}` : "Contact for pricing"}
+                  {pkg.price ? `$${pkg.price}` : "Contact for pricing"}
                 </p>
                 {Array.isArray(pkg.departments) && pkg.departments.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-3">

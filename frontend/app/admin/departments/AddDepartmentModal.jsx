@@ -9,9 +9,14 @@ const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 export default function AddDepartmentModal({ open, onClose, onSaved }) {
   const fileInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
+  const videoInputRef = useRef(null);
   const [preview, setPreview] = useState(null);
   const [fileName, setFileName] = useState("");
   const [file, setFile] = useState(null);
+  const [galleryFiles, setGalleryFiles] = useState([]);
+  const [videoFiles, setVideoFiles] = useState([]);
+  const [videoLinks, setVideoLinks] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -19,6 +24,10 @@ export default function AddDepartmentModal({ open, onClose, onSaved }) {
     description: "",
     isActive: true,
     image: "",
+    heroImage: "",
+    coverImage: "",
+    images: [],
+    videos: [],
   });
 
   useEffect(() => {
@@ -29,10 +38,17 @@ export default function AddDepartmentModal({ open, onClose, onSaved }) {
         description: "",
         isActive: true,
         image: "",
+        heroImage: "",
+        coverImage: "",
+        images: [],
+        videos: [],
       });
       setPreview(null);
       setFileName("");
       setFile(null);
+      setGalleryFiles([]);
+      setVideoFiles([]);
+      setVideoLinks("");
       setSubmitting(false);
     }
   }, [open]);
@@ -66,6 +82,26 @@ export default function AddDepartmentModal({ open, onClose, onSaved }) {
     if (file) readFile(file);
   }
 
+  function handleGalleryChange(e) {
+    const files = Array.from(e.target.files || []);
+    const mapped = files.slice(0, 10 - ((form.images?.length || 0) + galleryFiles.length)).map((f) => ({
+      file: f,
+      preview: URL.createObjectURL(f),
+      name: f.name,
+    }));
+    setGalleryFiles((prev) => [...prev, ...mapped]);
+  }
+
+  function removeGalleryFile(idx) {
+    setGalleryFiles((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function handleVideoChange(e) {
+    const files = Array.from(e.target.files || []);
+    const mapped = files.map((f) => ({ file: f, name: f.name }));
+    setVideoFiles((prev) => [...prev, ...mapped]);
+  }
+
   async function uploadToCloudinary(uploadFile) {
     const formData = new FormData();
     formData.append("image", uploadFile);
@@ -85,15 +121,58 @@ export default function AddDepartmentModal({ open, onClose, onSaved }) {
     if (!form.name) return;
     setSubmitting(true);
     try {
-      let uploadedUrl = form.image;
+      const uploadFiles = async (files, folder) => {
+        if (!files?.length) return [];
+        const uploads = await Promise.all(
+          files.map(async (currentFile) => {
+            const fd = new FormData();
+            fd.append("image", currentFile);
+            if (folder) fd.append("folder", folder);
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
+              method: "POST",
+              body: fd,
+              credentials: "include",
+            });
+            if (!res.ok) throw new Error("Upload failed");
+            const data = await res.json();
+            return data.secure_url || data.url;
+          })
+        );
+        return uploads.filter(Boolean);
+      };
+
+      let uploadedUrl = form.coverImage || form.image || form.heroImage;
       if (file) {
-        uploadedUrl = await uploadToCloudinary(file);
-        console.log("Submitting Department:", { image: uploadedUrl });
+        const [url] = await uploadFiles([file], "departments");
+        uploadedUrl = url || uploadedUrl;
       }
+
+      // gallery images
+      let images = [...(form.images || [])];
+      if (galleryFiles.length) {
+        const urls = await uploadFiles(galleryFiles.map((g) => g.file), "departments");
+        images = [...images, ...urls].slice(0, 10);
+      }
+
+      // videos
+      let videos = [...(form.videos || [])];
+      const linkVideos = videoLinks
+        .split(/\n|,/)
+        .map((l) => l.trim())
+        .filter(Boolean);
+      videos = [...videos, ...linkVideos];
+      if (videoFiles.length) {
+        const urls = await uploadFiles(videoFiles.map((v) => v.file), "departments");
+        videos = [...videos, ...urls];
+      }
+
       const payload = {
         ...form,
         image: uploadedUrl,
         heroImage: uploadedUrl,
+        coverImage: uploadedUrl,
+        images,
+        videos,
       };
       await apiPost("/departments", payload);
       onSaved?.();
@@ -176,7 +255,7 @@ export default function AddDepartmentModal({ open, onClose, onSaved }) {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm text-slate-300">Upload Image</p>
+                <p className="text-sm text-slate-300">Upload Cover Image</p>
                 <p className="text-xs text-slate-500">Drag & drop or click to choose a cover image.</p>
               </div>
               <div className="flex items-center gap-2">
@@ -235,6 +314,107 @@ export default function AddDepartmentModal({ open, onClose, onSaved }) {
                   <p className="text-sm text-slate-400">
                     This preview will be uploaded to Cloudinary and saved with the department.
                   </p>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-300">Gallery Images</p>
+                  <p className="text-xs text-slate-500">You can add up to 10 supporting images.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="px-3 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-100 hover:bg-slate-800"
+                >
+                  Add images
+                </button>
+              </div>
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleGalleryChange}
+              />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {galleryFiles.map((g, idx) => (
+                  <div
+                    key={`${g.name}-${idx}`}
+                    className="relative rounded-lg overflow-hidden border border-slate-700 bg-slate-900"
+                  >
+                    <img src={g.preview} alt={g.name} className="h-28 w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeGalleryFile(idx)}
+                      className="absolute top-1 right-1 rounded-full bg-black/60 text-white text-xs px-2 py-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                {(form.images || []).map((url, idx) => (
+                  <div
+                    key={`existing-${idx}`}
+                    className="relative rounded-lg overflow-hidden border border-slate-700 bg-slate-900"
+                  >
+                    <img src={url} alt={`Image ${idx + 1}`} className="h-28 w-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-300">Videos (optional)</p>
+                  <p className="text-xs text-slate-500">Upload video files or paste links (one per line).</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => videoInputRef.current?.click()}
+                  className="px-3 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-100 hover:bg-slate-800"
+                >
+                  Upload videos
+                </button>
+              </div>
+              <textarea
+                value={videoLinks}
+                onChange={(e) => setVideoLinks(e.target.value)}
+                placeholder="Paste video URLs (YouTube or direct) – one per line"
+                className={inputClasses}
+                rows={3}
+              />
+              <input
+                ref={videoInputRef}
+                type="file"
+                accept="video/*"
+                multiple
+                className="hidden"
+                onChange={handleVideoChange}
+              />
+              {(videoFiles.length > 0 || form.videos?.length) && (
+                <div className="space-y-2">
+                  {videoFiles.map((v, idx) => (
+                    <div key={`${v.name}-${idx}`} className="flex items-center justify-between text-xs text-slate-300">
+                      <span>{v.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setVideoFiles((prev) => prev.filter((_, i) => i !== idx))}
+                        className="text-rose-300 hover:text-rose-200"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  {form.videos?.map((v, idx) => (
+                    <div key={`saved-${idx}`} className="text-xs text-slate-400">
+                      {v}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

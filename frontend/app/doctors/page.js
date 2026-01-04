@@ -1,16 +1,19 @@
 import { apiGet } from '@/lib/api';
-import DoctorsGrid from '@/components/doctors/DoctorsGrid';
 import DoctorCard from '@/components/DoctorCard';
+import Container from '@/components/Container';
 
 export const metadata = {
   title: 'Our Doctors | Annapurna Nature Cure Hospital',
 };
 
+export const revalidate = 0;
+export const dynamic = "force-dynamic";
+
 export default async function DoctorsPage() {
   let doctors = [];
 
   try {
-    const res = await apiGet('/doctors');
+    const res = await apiGet('/doctors?status=published');
     doctors = res.data || [];
   } catch (err) {
     return <div className="p-6 text-red-600">Failed to load doctors</div>;
@@ -44,15 +47,15 @@ export default async function DoctorsPage() {
   return (
     <div className="bg-[#f5f8f4] min-h-screen">
       <section className="bg-gradient-to-b from-white via-[#e6f2fb] to-[#f5f8f4]">
-        <div className="max-w-6xl mx-auto px-6 py-16 md:py-20 text-center space-y-3">
+        <Container className="py-16 md:py-20 text-center space-y-3">
           <h1 className="text-3xl md:text-4xl font-semibold text-[#10231a]">Our Doctors</h1>
           <p className="text-base md:text-lg text-[#4c5f68]">
             Experienced professionals guiding your healing journey
           </p>
-        </div>
+        </Container>
       </section>
 
-      <div className="max-w-6xl mx-auto px-6 pb-16 md:pb-20 space-y-12">
+      <Container className="pb-16 md:pb-20 space-y-12">
         {groupedDepartments.map(({ name, doctors }) => (
           <section key={name} className="space-y-6">
             <h2 className="text-2xl font-semibold text-[#10231a]">{name}</h2>
@@ -70,7 +73,7 @@ export default async function DoctorsPage() {
             </div>
           </section>
         )}
-      </div>
+      </Container>
     </div>
   );
 }

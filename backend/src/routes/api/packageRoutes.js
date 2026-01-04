@@ -8,8 +8,31 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.get('/', controller.getAll);
 router.get('/:id', controller.getOne);
-router.post('/', authenticate, requireAdmin, upload.single('image'), controller.create);
-router.put('/:id', authenticate, requireAdmin, upload.single('image'), controller.update);
+router.patch('/:id/status', authenticate, requireAdmin, controller.updateStatus);
+router.post(
+  '/',
+  authenticate,
+  requireAdmin,
+  upload.fields([
+    { name: 'coverImage', maxCount: 1 },
+    { name: 'image', maxCount: 1 },
+    { name: 'galleryImages', maxCount: 10 },
+    { name: 'promoVideo', maxCount: 1 },
+  ]),
+  controller.create
+);
+router.put(
+  '/:id',
+  authenticate,
+  requireAdmin,
+  upload.fields([
+    { name: 'coverImage', maxCount: 1 },
+    { name: 'image', maxCount: 1 },
+    { name: 'galleryImages', maxCount: 10 },
+    { name: 'promoVideo', maxCount: 1 },
+  ]),
+  controller.update
+);
 router.delete('/:id', authenticate, requireAdmin, controller.remove);
 
 module.exports = router;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { MagnifyingGlassIcon, PlusIcon, UserGroupIcon } from "@heroicons/react/24/solid";
-import { apiGet, apiDelete } from "@/lib/api";
+import { apiGet, apiDelete, apiPatch } from "@/lib/api";
 import AddDoctorModal from "@/components/admin/AddDoctorModal";
 import DoctorCard from "@/components/admin/DoctorCard";
 
@@ -12,11 +12,12 @@ export default function AdminDoctorsPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [updatingId, setUpdatingId] = useState(null);
 
   async function loadDoctors() {
     setLoading(true);
     try {
-      const res = await apiGet("/doctors");
+      const res = await apiGet("/doctors?includeDrafts=true");
       const data = res?.data || res || [];
       setDoctors(data);
       setFiltered(data);
@@ -50,6 +51,25 @@ export default function AdminDoctorsPage() {
       loadDoctors();
     } catch (err) {
       alert(err.message || "Failed to delete doctor");
+    }
+  }
+
+  function syncStatus(id, status) {
+    setDoctors((prev) => prev.map((d) => (d._id === id ? { ...d, status } : d)));
+    setFiltered((prev) => prev.map((d) => (d._id === id ? { ...d, status } : d)));
+  }
+
+  async function handleToggleStatus(doctor) {
+    const nextStatus = doctor.status === "published" ? "draft" : "published";
+    syncStatus(doctor._id, nextStatus);
+    setUpdatingId(doctor._id);
+    try {
+      await apiPatch(`/doctors/${doctor._id}/status`, { status: nextStatus });
+    } catch (err) {
+      syncStatus(doctor._id, doctor.status);
+      alert(err.message || "Failed to update status");
+    } finally {
+      setUpdatingId(null);
     }
   }
 
@@ -109,7 +129,13 @@ export default function AdminDoctorsPage() {
       {!loading && filtered.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((doctor) => (
-            <DoctorCard key={doctor._id} doctor={doctor} onDelete={handleDelete} />
+            <DoctorCard
+              key={doctor._id}
+              doctor={doctor}
+              onDelete={handleDelete}
+              onToggleStatus={handleToggleStatus}
+              updatingStatus={updatingId === doctor._id}
+            />
           ))}
         </div>
       )}

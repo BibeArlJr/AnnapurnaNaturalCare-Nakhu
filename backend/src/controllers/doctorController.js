@@ -3,9 +3,37 @@ const Doctor = require('../models/Doctor');
 const Appointment = require('../models/Appointment');
 const { uploadImage } = require('../services/cloudinary');
 
+function toArray(value) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith('data:')) return [trimmed];
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch (_) {
+      // not JSON array, fallback to split
+    }
+    return trimmed.split(/[,\n]+/).map((v) => v.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 exports.getAll = async (req, res) => {
   try {
-    const items = await Doctor.find().populate('departmentId', 'name');
+    const { status, includeDrafts } = req.query || {};
+    const query = {};
+
+    if (includeDrafts === 'true' || status === 'all') {
+      // no status filter
+    } else if (status) {
+      query.status = status;
+    } else {
+      query.status = 'published';
+    }
+
+    const items = await Doctor.find(query).populate('departmentId', 'name');
     return res.json({ success: true, data: items });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Server Error' });
@@ -14,16 +42,39 @@ exports.getAll = async (req, res) => {
 // Alias to satisfy consumers expecting getDoctors
 exports.getDoctors = exports.getAll;
 
+exports.updateStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body || {};
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ success: false, message: 'Invalid ID' });
+  }
+  if (!['draft', 'published'].includes(status)) {
+    return res.status(400).json({ success: false, message: 'Invalid status' });
+  }
+
+  try {
+    const updated = await Doctor.findByIdAndUpdate(id, { status }, { new: true });
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Not Found' });
+    }
+    return res.json({ success: true, data: updated });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
 exports.getOne = async (req, res) => {
   const { id } = req.params;
 
   try {
+    const includeDrafts = req.query?.includeDrafts === 'true' || req.query?.status === 'all';
     const isObjectId = mongoose.Types.ObjectId.isValid(id);
     const item = isObjectId
       ? await Doctor.findById(id).populate('departmentId', 'name')
       : await Doctor.findOne({ slug: id }).populate('departmentId', 'name');
 
-    if (!item) {
+    if (!item || (!includeDrafts && item.status !== 'published')) {
       return res.status(404).json({ success: false, message: 'Not Found' });
     }
 
@@ -36,7 +87,7 @@ exports.getOne = async (req, res) => {
 exports.create = async (req, res) => {
   try {
     const payload = { ...req.body };
-    const { imageData, experience } = payload;
+    const { imageData, experience, videoData } = payload;
 
     if (experience !== undefined) {
       const numExp = Number(experience);
@@ -58,12 +109,40 @@ exports.create = async (req, res) => {
       payload.photo = payload.photo.secure_url || payload.photo.url || '';
     }
 
+    // Normalize media fields
+    const incomingGallery = toArray(payload.galleryImages);
+    const galleryImageData = toArray(payload.galleryImageData);
+    const uploadedGallery = [];
+    for (const img of galleryImageData) {
+      try {
+        const uploaded = await uploadImage(img, 'doctors/gallery');
+        if (uploaded?.secure_url || uploaded?.url) {
+          uploadedGallery.push(uploaded.secure_url || uploaded.url);
+        }
+      } catch (err) {
+        console.error('Gallery upload failed', err);
+      }
+    }
+    payload.galleryImages = [...incomingGallery, ...uploadedGallery];
+    payload.videoUrl = (payload.videoUrl || '').toString().trim();
+
+    if (videoData) {
+      try {
+        const uploadedVideo = await uploadImage(videoData, 'doctors/videos', { resource_type: 'video' });
+        payload.videoUrl = uploadedVideo?.secure_url || uploadedVideo?.url || payload.videoUrl;
+      } catch (err) {
+        console.error('Video upload failed', err);
+      }
+    }
+
     const qualifications = Array.isArray(payload.medicalQualifications) ? payload.medicalQualifications : [];
     payload.medicalQualifications = qualifications
       .map((q) => (typeof q === 'string' ? { degree: q } : q))
       .filter((q) => q && q.degree);
 
     delete payload.imageData;
+    delete payload.videoData;
+    delete payload.galleryImageData;
     delete payload.experience;
 
     const newItem = await Doctor.create(payload);
@@ -82,7 +161,7 @@ exports.update = async (req, res) => {
 
   try {
     const payload = { ...req.body };
-    const { imageData, experience } = payload;
+    const { imageData, experience, videoData } = payload;
 
     if (experience !== undefined) {
       const numExp = Number(experience);
@@ -104,12 +183,42 @@ exports.update = async (req, res) => {
       payload.photo = payload.photo.secure_url || payload.photo.url || '';
     }
 
+    // Normalize media fields
+    const incomingGallery = toArray(payload.galleryImages);
+    const galleryImageData = toArray(payload.galleryImageData);
+    const uploadedGallery = [];
+    for (const img of galleryImageData) {
+      try {
+        const uploaded = await uploadImage(img, 'doctors/gallery');
+        if (uploaded?.secure_url || uploaded?.url) {
+          uploadedGallery.push(uploaded.secure_url || uploaded.url);
+        }
+      } catch (err) {
+        console.error('Gallery upload failed', err);
+      }
+    }
+    if (incomingGallery.length || uploadedGallery.length) {
+      payload.galleryImages = [...incomingGallery, ...uploadedGallery];
+    }
+    payload.videoUrl = (payload.videoUrl || '').toString().trim();
+
+    if (videoData) {
+      try {
+        const uploadedVideo = await uploadImage(videoData, 'doctors/videos', { resource_type: 'video' });
+        payload.videoUrl = uploadedVideo?.secure_url || uploadedVideo?.url || payload.videoUrl;
+      } catch (err) {
+        console.error('Video upload failed', err);
+      }
+    }
+
     const qualifications = Array.isArray(payload.medicalQualifications) ? payload.medicalQualifications : [];
     payload.medicalQualifications = qualifications
       .map((q) => (typeof q === 'string' ? { degree: q } : q))
       .filter((q) => q && q.degree);
 
     delete payload.imageData;
+    delete payload.videoData;
+    delete payload.galleryImageData;
     delete payload.experience;
 
     const updated = await Doctor.findByIdAndUpdate(id, payload, { new: true });

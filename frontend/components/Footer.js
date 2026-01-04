@@ -105,9 +105,21 @@ export default function Footer() {
             <div className="h-1 w-10 bg-teal-500 rounded-full mt-1" />
 
             <ul className="space-y-2">
-              <li>Support Center</li>
-              <li>Billing & Insurance</li>
-              <li>FAQs</li>
+              <li>
+                <Link href="/support/support-center" className="hover:text-white">
+                  Support Center
+                </Link>
+              </li>
+              <li>
+                <Link href="/support/billing-insurance" className="hover:text-white">
+                  Billing &amp; Insurance
+                </Link>
+              </li>
+              <li>
+                <Link href="/support/faqs" className="hover:text-white">
+                  FAQs
+                </Link>
+              </li>
             </ul>
           </div>
 

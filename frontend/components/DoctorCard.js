@@ -1,10 +1,26 @@
 import Link from 'next/link';
 
-export default function DoctorCard({ doctor, variant }) {
+function Highlight({ text, term }) {
+  if (!term) return text;
+  const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")})`, "i");
+  const parts = text.split(regex);
+  return parts.map((part, idx) =>
+    regex.test(part) ? (
+      <mark key={idx} className="bg-yellow-100 text-inherit">{part}</mark>
+    ) : (
+      <span key={idx}>{part}</span>
+    )
+  );
+}
+
+export default function DoctorCard({ doctor, variant, highlightTerm }) {
   const isCompact = variant === 'compact';
   const wrapperPadding = isCompact ? 'p-4' : 'p-5';
   const imageSize = isCompact ? 'w-28 h-28' : 'w-36 h-36';
   const ctaMargin = isCompact ? 'mt-3' : 'mt-4';
+  const departmentName =
+    doctor.department?.name || doctor.department?.title || doctor.departmentName;
+  const qualification = doctor.degree || doctor.qualification || doctor.qualifications?.[0];
 
   return (
     <Link
@@ -29,25 +45,19 @@ export default function DoctorCard({ doctor, variant }) {
       </div>
 
       <h3 className="text-base font-semibold text-[#10231a] group-hover:text-primary-teal transition">
-        {doctor.name}
+        <Highlight text={doctor.name} term={highlightTerm} />
       </h3>
 
-      {(doctor.specialty || doctor.specialties?.[0]) ? (
-        <p className="text-sm text-[#5a695e] mt-1">
-          {doctor.specialty || doctor.specialties?.[0]}
-        </p>
-      ) : null}
-
-      {doctor.department?.name ? (
-        <span
-          className="
-          mt-3 inline-block text-xs px-3 py-1 rounded-full bg-primary-light/10
-          text-primary-teal font-medium
-        "
-        >
-          {doctor.department.name}
-        </span>
-      ) : null}
+      {(departmentName || qualification) && (
+        <div className="flex flex-col items-center gap-1 mt-2">
+          {departmentName && (
+            <p className="text-sm font-semibold text-[#2F8D59]">
+              <Highlight text={departmentName} term={highlightTerm} />
+            </p>
+          )}
+          {qualification && <p className="text-xs text-[#4c5f68]"><Highlight text={qualification} term={highlightTerm} /></p>}
+        </div>
+      )}
 
       <span className={`inline-block ${ctaMargin} text-primary-teal font-medium text-sm hover:underline`}>
         View Profile →

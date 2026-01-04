@@ -139,6 +139,7 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   const { id } = req.params;
+  const { notifyPatient } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ success: false, message: 'Invalid ID' });
@@ -148,6 +149,14 @@ exports.update = async (req, res) => {
     const updated = await Appointment.findByIdAndUpdate(id, req.body, { new: true });
     if (!updated) {
       return res.status(404).json({ success: false, message: 'Not Found' });
+    }
+    const shouldNotify = notifyPatient;
+    if (shouldNotify && updated.patientEmail) {
+      try {
+        await sendAppointmentEmail(updated.patientEmail, updated);
+      } catch (mailErr) {
+        console.error('Appointment update email failed:', mailErr?.message || mailErr);
+      }
     }
     return res.json({ success: true, data: updated });
   } catch (error) {

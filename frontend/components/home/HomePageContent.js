@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
+import DepartmentCard from "@/components/DepartmentCard";
 
 function StatCard({ label, value }) {
   return (
@@ -33,24 +34,136 @@ export default function HomePageContent() {
   const [packages, setPackages] = useState([]);
   const [blogs, setBlogs] = useState([]);
   const [galleryItems, setGalleryItems] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [retreatPrograms, setRetreatPrograms] = useState([]);
+  const [programSlide, setProgramSlide] = useState(0);
+  const programScrollRef = useRef(null);
   const [loading, setLoading] = useState(true);
+  const onlyPublished = (list = []) => list.filter((item) => (item?.status || "") === "published");
+
+  const stripHtml = (val = "") =>
+    typeof val === "string" ? val.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "";
+
+  const storyItems = useMemo(() => {
+    const blogCards =
+      (blogs || []).map((b) => ({
+        type: "blog",
+        id: b._id,
+        title: b.title || b.name || "Article",
+        description: stripHtml(b.shortDescription || b.excerpt || b.description || "").slice(0, 180),
+        image: b.coverImage || b.image || b.photo || b.heroImage || null,
+        href: `/blog/${b.slug || b._id}`,
+        tag: "Blog",
+      })) || [];
+
+    const reviewCards =
+      (reviews || []).map((r) => ({
+        type: "review",
+        id: r._id,
+        title: r.headline || r.patientName || "Patient review",
+        description: stripHtml(r.fullReviewHtml || r.fullReview || r.shortReview || "").slice(0, 180),
+        image: r.coverImage || r.photo || null,
+        href: `/patient-reviews/${r.slug || r._id}`,
+        tag: "Patient review",
+        rating: r.rating,
+        patientName: r.patientName,
+        country: r.country,
+      })) || [];
+
+    return [...blogCards, ...reviewCards];
+  }, [blogs, reviews]);
+
+  const programItems = useMemo(() => {
+    const pkgCards =
+      (packages || []).map((pkg) => {
+        const programDays = pkg.duration || pkg.durationDays || pkg.days;
+        const duration = programDays ? `Program Duration: ${programDays} days` : "";
+        const image =
+          pkg.imageUrl || pkg.image || pkg.photo || pkg.coverImage || pkg.heroImage || (pkg.galleryImages || [])[0] || null;
+        return {
+          type: "package",
+          id: pkg._id,
+          title: pkg.name || pkg.title || "Health package",
+          description: stripHtml(pkg.shortDescription || pkg.description || "").slice(0, 180),
+          price: pkg.price ? `$${pkg.price}` : "",
+          duration,
+          image,
+          href: `/pack/${pkg.slug || pkg._id}`,
+          tag: "Health package",
+        };
+      }) || [];
+
+    const retreatCards =
+      (retreatPrograms || []).map((prog) => {
+        const programDays = prog.durationDays;
+        const duration = programDays ? `Program Duration: ${programDays} days` : "";
+        const image = prog.coverImage || (prog.galleryImages || [])[0] || null;
+        const price = prog.pricePerPersonUSD ? `$${prog.pricePerPersonUSD}` : "";
+        return {
+          type: "retreat",
+          id: prog._id,
+          title: prog.title || "Retreat program",
+          description: stripHtml(prog.descriptionShort || prog.descriptionLong || "").slice(0, 180),
+          price,
+          duration,
+          image,
+          href: `/retreat-programs/${prog.slug || prog._id}`,
+          tag: "Retreat program",
+        };
+      }) || [];
+
+    return [...pkgCards, ...retreatCards];
+  }, [packages, retreatPrograms]);
+
+  const [viewportWidth, setViewportWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
+
+  useEffect(() => {
+    function handleResize() {
+      setViewportWidth(window.innerWidth);
+    }
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const programPerView = viewportWidth >= 1024 ? 4 : viewportWidth >= 768 ? 2 : 1;
+  const programSlides = Math.max(1, Math.ceil(programItems.length / programPerView));
+
+  useEffect(() => {
+    if (programSlide > programSlides - 1) {
+      setProgramSlide(programSlides - 1);
+    }
+  }, [programSlide, programSlides]);
+
+  function scrollProgramTo(slide) {
+    const node = programScrollRef.current;
+    if (!node) return;
+    const target = Math.min(programSlides - 1, Math.max(0, slide));
+    const slideWidth = node.scrollWidth / programSlides;
+    node.scrollTo({ left: slideWidth * target, behavior: "smooth" });
+    setProgramSlide(target);
+  }
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [depRes, docRes, pkgRes, blogRes, galRes] = await Promise.all([
+        const [depRes, docRes, pkgRes, blogRes, galRes, reviewRes, retreatRes] = await Promise.all([
           apiGet("/departments"),
           apiGet("/doctors"),
           apiGet("/packages"),
           apiGet("/blogs"),
           apiGet("/gallery"),
+          apiGet("/patient-reviews?status=published"),
+          apiGet("/retreat-programs"),
         ]);
 
-        setDepartments((depRes?.data || depRes || []).slice(0, 6));
-        setDoctors((docRes?.data || docRes || []).slice(0, 4));
-        setPackages((pkgRes?.data || pkgRes || []).slice(0, 3));
-        setBlogs((blogRes?.data || blogRes || []).slice(0, 3));
+        setDepartments(onlyPublished(depRes?.data || depRes || []).slice(0, 6));
+        setDoctors(onlyPublished(docRes?.data || docRes || []).slice(0, 4));
+        setPackages(onlyPublished(pkgRes?.data || pkgRes || []).slice(0, 3));
+        setBlogs(onlyPublished(blogRes?.data || blogRes || []).slice(0, 3));
         setGalleryItems((galRes?.data || galRes || []).slice(0, 6));
+        setReviews((reviewRes?.data || reviewRes || []).slice(0, 4));
+        setRetreatPrograms(onlyPublished(retreatRes?.data || retreatRes || []).slice(0, 3));
       } catch (err) {
         console.error("Home data load error:", err);
       } finally {
@@ -64,7 +177,7 @@ export default function HomePageContent() {
   return (
     <>
       <section
-        className="relative min-h-[75vh] flex flex-col items-center pt-24 pb-36 bg-white"
+        className="relative min-h-[75vh] flex flex-col items-center pt-24 pb-24 bg-white"
       >
         <div className="w-full max-w-5xl px-6 text-center flex flex-col items-center space-y-10">
           <motion.div
@@ -106,34 +219,6 @@ export default function HomePageContent() {
 
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-          viewport={{ once: true }}
-          className="absolute left-0 right-0 -bottom-6 md:-bottom-8 z-10 w-full px-4"
-        >
-          <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-md border border-[#cfe8d6] p-6 flex flex-wrap md:flex-nowrap items-center gap-3 justify-center">
-            <input
-              className="flex-1 min-w-[180px] bg-white border border-[#cfe8d6] rounded-xl px-3 py-2.5 text-sm text-[#10231a] placeholder:text-slate-500 focus:outline-none focus:border-[#2F8D59]"
-              placeholder="Search doctors (e.g., Orthopedic)"
-            />
-            <input
-              className="flex-1 min-w-[180px] bg-white border border-[#cfe8d6] rounded-xl px-3 py-2.5 text-sm text-[#10231a] placeholder:text-slate-500 focus:outline-none focus:border-[#2F8D59]"
-              placeholder="Search departments (e.g., Physiotherapy)"
-            />
-            <input
-              type="date"
-              className="w-[180px] bg-white border border-[#cfe8d6] rounded-xl px-3 py-2.5 text-sm text-[#10231a] placeholder:text-slate-500 focus:outline-none focus:border-[#2F8D59]"
-            />
-            <Link
-              href="/doctors"
-              className="px-6 py-3 rounded-xl bg-[#2F8D59] hover:bg-[#256b46] text-white text-sm font-semibold transition text-center whitespace-nowrap"
-            >
-              Search
-            </Link>
-          </div>
-        </motion.div>
       </section>
 
       {/* QUICK ACCESS CARDS – subtle background */}
@@ -242,7 +327,9 @@ export default function HomePageContent() {
             {!loading && departments.length > 0 && (
               <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
                 {departments.map((dep) => (
-                  <DepartmentCard key={dep._id} dep={dep} />
+                  <div key={dep._id} className="flex-shrink-0 w-[380px]">
+                    <DepartmentCard department={dep} />
+                  </div>
                 ))}
               </div>
             )}
@@ -285,48 +372,89 @@ export default function HomePageContent() {
         <div className={sectionContainer}>
           <SectionHeader
             eyebrow="Health packages"
-            title="Structured treatment programs"
-            subtitle="Residential programs tailored for detox, pain, lifestyle disorders and stress."
+            title="Structured programs & retreats"
+            subtitle="Residential packages and retreat programs tailored for detox, pain, lifestyle disorders and stress."
             linkHref="/packages"
             linkText="View all packages"
           />
 
-          <motion.div {...fadeUp(0.1)} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <motion.div {...fadeUp(0.1)} className="relative">
             {loading && <SkeletonGrid count={3} />}
-
-            {!loading &&
-              packages.map((pkg) => (
-                <PackageCard key={pkg._id} pkg={pkg} />
-              ))}
-
-            {!loading && packages.length === 0 && (
-              <p className="text-sm text-[#5a695e]">Packages will appear here once created from the admin panel.</p>
+            {!loading && programItems.length > 0 && (
+              <div className="relative">
+                <div
+                  ref={programScrollRef}
+                  className="flex gap-4 overflow-x-auto pb-6 snap-x snap-mandatory scroll-smooth"
+                >
+                  {programItems.map((item, idx) => (
+                    <Link
+                      key={`${item.type}-${item.id}`}
+                      href={item.href}
+                      className="snap-start flex-shrink-0 w-full sm:w-[48%] lg:w-[23%] rounded-2xl bg-white border border-[#d3e5da] overflow-hidden shadow-sm flex flex-col transition hover:-translate-y-1 hover:shadow-md min-h-[320px]"
+                    >
+                      <div className="relative h-40 bg-[#cfe4d6] overflow-hidden">
+                        {item.image ? (
+                          <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-[#d7efe2] to-[#c3e0d1]" />
+                        )}
+                        <span className="absolute top-2 left-2 px-2 py-1 text-[11px] font-semibold rounded-full bg-black/70 text-white">
+                          {item.tag}
+                        </span>
+                      </div>
+                      <div className="p-3 flex flex-col gap-2 flex-1">
+                        <p className="text-sm font-semibold text-[#10231a] line-clamp-2">{item.title}</p>
+                        {item.description ? (
+                          <p className="text-xs text-[#5a695e] line-clamp-3">{item.description}</p>
+                        ) : null}
+                        <div className="text-xs text-[#1c8c5b] font-semibold flex items-center justify-between mt-2">
+                          <span>{item.price}</span>
+                          {item.duration ? (
+                            <span className="px-2 py-0.5 rounded-full bg-[#ecf7f0] text-[#2f7f5b] border border-[#b6dec5]">
+                              {item.duration}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+                {programSlides > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => scrollProgramTo(programSlide - 1)}
+                      disabled={programSlide === 0}
+                      className="hidden lg:flex absolute -left-3 top-1/2 -translate-y-1/2 h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-100 shadow-sm disabled:opacity-50"
+                      aria-label="Previous programs"
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => scrollProgramTo(programSlide + 1)}
+                      disabled={programSlide >= programSlides - 1}
+                      className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-100 shadow-sm disabled:opacity-50"
+                      aria-label="Next programs"
+                    >
+                      →
+                    </button>
+                    <div className="flex justify-center gap-2 mt-2">
+                      {Array.from({ length: programSlides }).map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => scrollProgramTo(idx)}
+                          className={`h-2.5 w-2.5 rounded-full ${idx === programSlide ? "bg-emerald-700" : "bg-emerald-700/30"}`}
+                          aria-label={`Go to program slide ${idx + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             )}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* GALLERY */}
-      <section className={`${sectionWrapper} bg-white`}>
-        <div className={sectionContainer}>
-          <SectionHeader
-            eyebrow="Gallery"
-            title="Moments from Annapurna"
-            subtitle="Glimpses of therapies, yoga sessions, campus and patient journeys."
-            linkHref="/gallery"
-            linkText="View full gallery"
-          />
-
-          <motion.div {...fadeUp(0.1)} className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {loading && <SkeletonGrid count={6} />}
-
-            {!loading &&
-              galleryItems.map((item) => (
-                <GalleryThumb key={item._id} item={item} />
-              ))}
-
-            {!loading && galleryItems.length === 0 && (
-              <p className="text-sm text-[#5a695e]">Gallery items will appear here once you upload photos or videos.</p>
+            {!loading && programItems.length === 0 && (
+              <p className="text-sm text-[#5a695e]">Programs will appear here once created from the admin panel.</p>
             )}
           </motion.div>
         </div>
@@ -336,23 +464,24 @@ export default function HomePageContent() {
       <section className={`${sectionWrapper} bg-[#f5f8f4]`}>
         <div className={sectionContainer}>
           <SectionHeader
-            eyebrow="Latest articles"
-            title="Insights on natural healing"
-            subtitle="Read about therapies, lifestyle tips, and patient stories."
+            eyebrow="Stories & Reviews"
+            title="Insights and patient journeys"
+            subtitle="Read articles on natural healing and real patient experiences."
             linkHref="/blog"
-            linkText="Explore all articles"
+            linkText="Explore all stories"
           />
 
-          <motion.div {...fadeUp(0.1)} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <motion.div {...fadeUp(0.1)} className="relative">
             {loading && <SkeletonGrid count={3} />}
-
-            {!loading &&
-              blogs.map((post) => (
-                <BlogCard key={post._id} post={post} />
-              ))}
-
-            {!loading && blogs.length === 0 && (
-              <p className="text-sm text-[#5a695e]">Articles will appear here once you publish blog posts.</p>
+            {!loading && storyItems.length > 0 && (
+              <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory">
+                {storyItems.map((item) => (
+                  <StoryCard key={`${item.type}-${item.id}`} item={item} />
+                ))}
+              </div>
+            )}
+            {!loading && storyItems.length === 0 && (
+              <p className="text-sm text-[#5a695e]">Stories will appear here once you publish articles or reviews.</p>
             )}
           </motion.div>
         </div>
@@ -507,33 +636,6 @@ function SkeletonGrid({ count = 3 }) {
   );
 }
 
-function DepartmentCard({ dep }) {
-  const image = dep.image || dep.heroImage || dep.coverImage || dep.photo;
-
-  return (
-    <motion.div
-      whileHover={{ y: -3, scale: 1.01 }}
-      className="min-w-[220px] rounded-2xl bg-white border border-[#d3e5da] overflow-hidden shadow-sm flex flex-col"
-    >
-      <div className="h-32 bg-[#cfe4d6] overflow-hidden">
-        {image ? (
-          <img src={image} alt={dep.name || "Department"} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-[#d7efe2] to-[#c3e0d1]" />
-        )}
-      </div>
-      <div className="px-4 py-4 flex-1 flex flex-col justify-between">
-        <div>
-          <h3 className="text-sm font-semibold text-[#10231a] mb-1">{dep.name || "Department"}</h3>
-          {dep.shortDescription && <p className="text-xs text-[#5a695e] line-clamp-3">{dep.shortDescription}</p>}
-        </div>
-        <Link href={`/departments/${dep.slug || dep._id}`} className="mt-3 text-xs font-medium text-[#1c8c5b] hover:text-[#145a3b]">
-          View details →
-        </Link>
-      </div>
-    </motion.div>
-  );
-}
 
 function DoctorCard({ doc }) {
   const image = doc.photoUrl || doc.photo || doc.image;
@@ -553,41 +655,6 @@ function DoctorCard({ doc }) {
       <div className="p-3 flex flex-col gap-1 flex-1">
         <p className="text-sm font-semibold text-[#10231a]">{doc.name || "Doctor"}</p>
         <p className="text-xs text-[#5a695e]">{doc.specialization || doc.departmentName || "Naturopathy & Wellness"}</p>
-      </div>
-    </motion.div>
-  );
-}
-
-function PackageCard({ pkg }) {
-  const daysLabel = pkg.duration ? `${pkg.duration} days` : null;
-  const image =
-    pkg.imageUrl ||
-    pkg.image ||
-    pkg.photo ||
-    pkg.coverImage ||
-    pkg.heroImage;
-  return (
-    <motion.div whileHover={{ y: -4, scale: 1.02 }} className="rounded-2xl bg-white border border-[#d3e5da] shadow-sm flex flex-col overflow-hidden">
-      <div className="relative w-full aspect-[4/3] bg-[#cfe4d6] overflow-hidden">
-        {image ? (
-          <img src={image} alt={pkg.name || "Package"} className="absolute inset-0 w-full h-full object-cover" />
-        ) : (
-          <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#d7efe2] to-[#c3e0d1]" />
-        )}
-      </div>
-      <div className="p-4 flex flex-col gap-2 flex-1">
-        <div>
-          <h3 className="text-sm font-semibold text-[#10231a] mb-1">{pkg.name || "Package"}</h3>
-          {pkg.shortDescription && <p className="text-xs text-[#5a695e] line-clamp-3">{pkg.shortDescription}</p>}
-        </div>
-        <div className="mt-1 flex items-center justify-between text-xs">
-          <div className="text-[#1c8c5b] font-semibold">{pkg.price ? `Rs. ${pkg.price}` : ""}</div>
-          {daysLabel && (
-            <span className="px-2 py-0.5 rounded-full bg-[#ecf7f0] text-[#2f7f5b] border border-[#b6dec5]">
-              {daysLabel}
-            </span>
-          )}
-        </div>
       </div>
     </motion.div>
   );
@@ -620,13 +687,76 @@ function GalleryThumb({ item }) {
   );
 }
 
+function StoryCard({ item }) {
+  const isReview = item.type === "review";
+  const badgeStyles = "bg-white/90 text-[#10231a] border border-white/80 shadow-sm";
+  const badgeIcon = isReview ? "💬" : "📰";
+
+  return (
+    <Link
+      href={item.href}
+      className="min-w-[260px] max-w-[260px] snap-start"
+    >
+      <div className="min-h-[360px] rounded-2xl bg-white border border-[#d3e5da] overflow-hidden shadow-sm flex flex-col transition hover:-translate-y-1 hover:shadow-md h-full">
+        <div className="relative h-40 bg-[#e6eef2] overflow-hidden flex items-center justify-center">
+          {item.image ? (
+            <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+          ) : (
+            <div className="flex items-center justify-center w-full h-full text-slate-500 text-lg gap-2">
+              <span role="img" aria-label="story">
+                {badgeIcon}
+              </span>
+              <span className="text-sm">{isReview ? "Patient story" : "Latest article"}</span>
+            </div>
+          )}
+          <span
+            className={`absolute top-2 left-2 px-2 py-1 text-[11px] font-semibold rounded-full ${badgeStyles} inline-flex items-center gap-1`}
+          >
+            <span>{badgeIcon}</span>
+            <span>{item.tag}</span>
+          </span>
+        </div>
+        <div className="p-4 flex flex-col gap-2 flex-1">
+          <p className="text-sm font-semibold text-[#10231a] line-clamp-2 overflow-hidden text-ellipsis">{item.title}</p>
+          <div className="min-h-[18px] text-xs text-slate-500 flex items-center gap-2">
+            {isReview && (item.patientName || item.country || item.rating) ? (
+              <>
+                {item.patientName ? <span>{item.patientName}</span> : null}
+                {item.country ? <span>· {item.country}</span> : null}
+                {item.rating ? (
+                  <span className="flex items-center gap-1 text-amber-500">
+                    {"★★★★★".slice(0, Math.max(0, Math.min(5, Number(item.rating) || 0)))}
+                    <span className="text-[11px] text-slate-500 ml-1">{`${item.rating}/5`}</span>
+                  </span>
+                ) : null}
+              </>
+            ) : null}
+          </div>
+          {item.description ? (
+            <p className="text-xs text-[#5a695e] line-clamp-3 overflow-hidden text-ellipsis">{item.description}</p>
+          ) : (
+            <div className="text-xs text-[#5a695e] h-[42px]" />
+          )}
+          <span className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 mt-auto">
+            Read full story →
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 function BlogCard({ post }) {
-  const thumb = post.mediaUrl || post.coverImage;
+  const thumb =
+    post.mediaUrl ||
+    post.coverImage ||
+    (Array.isArray(post.images) && post.images.length ? post.images[0] : null) ||
+    post.image;
 
   return (
     <Link href={`/blog/${post.slug || post._id}`}>
       <motion.div whileHover={{ y: -3, scale: 1.01 }} className="rounded-2xl bg-white border border-[#d3e5da] overflow-hidden shadow-sm flex flex-col">
-        <div className="h-28 bg-[#cfe4d6] overflow-hidden">
+        <div className="h-40 md:h-44 bg-[#cfe4d6] overflow-hidden">
           {thumb ? (
             <img src={thumb} alt={post.title || "Article"} className="w-full h-full object-cover" />
           ) : (

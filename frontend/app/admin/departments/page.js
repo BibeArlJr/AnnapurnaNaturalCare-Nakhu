@@ -5,7 +5,7 @@ import Link from "next/link";
 import { BuildingOfficeIcon, MagnifyingGlassIcon, PlusIcon } from "@heroicons/react/24/solid";
 import AddDepartmentModal from "./AddDepartmentModal";
 import DepartmentCardAdmin from "@/components/DepartmentCardAdmin";
-import { apiGet, apiDelete } from "@/lib/api";
+import { apiGet, apiDelete, apiPatch } from "@/lib/api";
 
 export default function AdminDepartmentsPage() {
   const [departments, setDepartments] = useState([]);
@@ -13,10 +13,11 @@ export default function AdminDepartmentsPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [updatingId, setUpdatingId] = useState(null);
 
   async function loadDepartments() {
     setLoading(true);
-    const res = await apiGet("/departments");
+    const res = await apiGet("/departments?includeDrafts=true");
     if (res.success) {
       setDepartments(res.data);
       setFiltered(res.data);
@@ -37,6 +38,25 @@ export default function AdminDepartmentsPage() {
     const res = await apiDelete(`/departments/${id}`);
     if (res.success) loadDepartments();
     else alert("Failed to delete.");
+  }
+
+  function syncStatus(id, status) {
+    setDepartments((prev) => prev.map((d) => (d._id === id ? { ...d, status } : d)));
+    setFiltered((prev) => prev.map((d) => (d._id === id ? { ...d, status } : d)));
+  }
+
+  async function handleToggleStatus(dept) {
+    const nextStatus = dept.status === "published" ? "draft" : "published";
+    syncStatus(dept._id, nextStatus);
+    setUpdatingId(dept._id);
+    try {
+      await apiPatch(`/departments/${dept._id}/status`, { status: nextStatus });
+    } catch (err) {
+      syncStatus(dept._id, dept.status);
+      alert(err.message || "Failed to update status");
+    } finally {
+      setUpdatingId(null);
+    }
   }
 
   useEffect(() => {
@@ -103,6 +123,8 @@ export default function AdminDepartmentsPage() {
               key={dept._id}
               dept={dept}
               onDelete={handleDelete}
+              onToggleStatus={handleToggleStatus}
+              updatingStatus={updatingId === dept._id}
             />
           ))}
         </div>

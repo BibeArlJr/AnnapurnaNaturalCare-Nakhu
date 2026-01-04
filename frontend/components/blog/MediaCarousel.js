@@ -1,10 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function MediaCarousel({ media = [] }) {
   const items = useMemo(() => (Array.isArray(media) ? media : []), [media]);
   const [index, setIndex] = useState(0);
+  const autoInterval = 4000;
+
+  useEffect(() => {
+    if (items.length <= 1) return;
+    const id = setInterval(() => {
+      setIndex((prev) => (prev + 1) % items.length);
+    }, autoInterval);
+    return () => clearInterval(id);
+  }, [items.length, autoInterval]);
 
   if (!items.length) return null;
 
@@ -72,9 +81,14 @@ export default function MediaCarousel({ media = [] }) {
       {items.length > 1 && (
         <div className="flex items-center gap-2">
           {items.map((_, i) => (
-            <span
+            <button
               key={i}
-              className={`h-2 w-2 rounded-full ${i === index ? "bg-[#2F8D59]" : "bg-[#dfe8e2]"}`}
+              type="button"
+              onClick={() => setIndex(i)}
+              aria-label={`Go to slide ${i + 1}`}
+              className={`h-2 w-2 rounded-full transition ${
+                i === index ? "bg-[#2F8D59]" : "bg-[#dfe8e2] hover:bg-[#b7d0c2]"
+              }`}
             />
           ))}
         </div>

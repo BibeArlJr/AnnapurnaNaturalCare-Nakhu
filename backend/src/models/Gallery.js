@@ -28,6 +28,11 @@ const GallerySchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    isPublished: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
   },
   { timestamps: true }
 );

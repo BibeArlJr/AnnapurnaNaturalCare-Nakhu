@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { PencilSquareIcon, TrashIcon, PlayIcon } from "@heroicons/react/24/solid";
+import { PublishToggle, StatusPill } from "./PublishToggle";
 
 function extractYouTubeID(url) {
   try {
@@ -16,7 +17,7 @@ function extractYouTubeID(url) {
   }
 }
 
-export default function BlogCard({ post, onDelete }) {
+export default function BlogCard({ post, onDelete, onToggleStatus, updatingStatus }) {
   const { _id, title, categoryId, createdAt, images = [], videos = [], youtubeLinks = [], mediaUrl } = post;
 
   function renderPreview() {
@@ -81,7 +82,15 @@ export default function BlogCard({ post, onDelete }) {
         </p>
       </div>
 
-      <div className="flex justify-end items-center gap-2">
+      <div className="flex justify-between items-center gap-3">
+        <div className="flex items-center gap-2">
+          <StatusPill status={post.status} />
+          <PublishToggle
+            status={post.status}
+            onToggle={() => onToggleStatus?.(post)}
+            disabled={updatingStatus}
+          />
+        </div>
         <Link
           href={`/admin/blogs/${_id}`}
           className="p-2 rounded-md bg-slate-800 hover:bg-slate-700 transition"

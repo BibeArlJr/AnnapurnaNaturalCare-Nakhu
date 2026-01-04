@@ -1,6 +1,6 @@
 import Container from "@/components/Container";
 import { apiGet } from "@/lib/api";
-import GalleryPreviewCard from "@/components/gallery/GalleryPreviewCard";
+import GalleryGrid from "@/components/gallery/GalleryGrid";
 
 export const metadata = {
   title: "Gallery – Annapurna Nature Cure Hospital",
@@ -29,19 +29,7 @@ export default async function GalleryPage() {
           </p>
         </div>
 
-        {(!items || items.length === 0) && (
-          <div className="bg-white border border-[#dfe8e2] rounded-2xl p-8 text-center text-[#4c5f68]">
-            No gallery items yet. Please check back soon.
-          </div>
-        )}
-
-        {items && items.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {items.map((item) => (
-              <GalleryPreviewCard key={item._id} item={item} />
-            ))}
-          </div>
-        )}
+        <GalleryGrid items={items} />
       </Container>
     </div>
   );

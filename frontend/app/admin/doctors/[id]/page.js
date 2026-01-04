@@ -16,6 +16,7 @@ const inputClasses =
 export default function EditDoctorPage({ params }) {
   const router = useRouter();
   const fileInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -23,6 +24,9 @@ export default function EditDoctorPage({ params }) {
   const [preview, setPreview] = useState("");
   const [fileName, setFileName] = useState("");
   const [imageData, setImageData] = useState("");
+  const [galleryUrlInput, setGalleryUrlInput] = useState("");
+  const [videoData, setVideoData] = useState("");
+  const [videoPreview, setVideoPreview] = useState("");
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -32,6 +36,8 @@ export default function EditDoctorPage({ params }) {
     degree: "",
     description: "",
     photo: "",
+    galleryImages: [],
+    videoUrl: "",
     medicalQualifications: [],
   });
 
@@ -43,7 +49,7 @@ export default function EditDoctorPage({ params }) {
     setLoading(true);
     setError("");
     try {
-      const res = await apiGet(`/doctors/${params.id}`);
+      const res = await apiGet(`/doctors/${params.id}?includeDrafts=true`);
       const data = res?.data || res || {};
       setForm({
         name: data.name || "",
@@ -54,9 +60,12 @@ export default function EditDoctorPage({ params }) {
         degree: data.degree || "",
         description: data.description || data.bio || "",
         photo: data.photo || "",
+        galleryImages: data.galleryImages || [],
+        videoUrl: data.videoUrl || "",
         medicalQualifications: data.medicalQualifications || [],
       });
       setPreview(data.photo || "");
+      setVideoPreview(data.videoUrl || "");
       await loadDepartments();
     } catch (err) {
       setError("Doctor not found");
@@ -67,7 +76,7 @@ export default function EditDoctorPage({ params }) {
 
   async function loadDepartments() {
     try {
-      const res = await apiGet("/departments");
+      const res = await apiGet("/departments?includeDrafts=true");
       const data = res?.data || res || [];
       setDepartments(data);
     } catch (err) {
@@ -124,17 +133,66 @@ export default function EditDoctorPage({ params }) {
     if (file) readFile(file);
   }
 
+  function handleGalleryFiles(e) {
+    const files = Array.from(e.target.files || []);
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm((prev) => ({
+          ...prev,
+          galleryImages: [...(prev.galleryImages || []), reader.result.toString()],
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function addGalleryUrl() {
+    const clean = galleryUrlInput.trim();
+    if (!clean) return;
+    setForm((prev) => ({ ...prev, galleryImages: [...(prev.galleryImages || []), clean] }));
+    setGalleryUrlInput("");
+  }
+
+  function removeGalleryImage(index) {
+    setForm((prev) => ({
+      ...prev,
+      galleryImages: (prev.galleryImages || []).filter((_, i) => i !== index),
+    }));
+  }
+
+  function handleVideoFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result.toString();
+      setVideoData(dataUrl);
+      setVideoPreview(URL.createObjectURL(file));
+      setForm((prev) => ({ ...prev, videoUrl: "" }));
+    };
+    reader.readAsDataURL(file);
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.name || !form.departmentId) return;
     setSubmitting(true);
     try {
+      const galleryList = Array.isArray(form.galleryImages) ? form.galleryImages : [];
+      const galleryImages = galleryList.filter((img) => img && !img.startsWith("data:"));
+      const galleryImageData = galleryList.filter((img) => img && img.startsWith("data:"));
+
       const payload = {
         ...form,
         experience: form.experience,
         degree: form.degree,
         imageData: imageData || undefined,
         bio: form.description,
+        galleryImages,
+        galleryImageData,
+        videoUrl: form.videoUrl?.trim(),
+        videoData: videoData || undefined,
         medicalQualifications: (form.medicalQualifications || []).filter((q) => q && q.degree),
       };
       await apiPut(`/doctors/${params.id}`, payload);
@@ -276,11 +334,11 @@ export default function EditDoctorPage({ params }) {
               </div>
 
                 <div className="space-y-2">
-              <label className="text-sm text-slate-300">About / Description</label>
-              <ReactQuill
-                theme="snow"
-                value={form.description}
-                onChange={(value) => setForm((prev) => ({ ...prev, description: value }))}
+                  <label className="text-sm text-slate-300">About / Description</label>
+                  <ReactQuill
+                    theme="snow"
+                    value={form.description}
+                    onChange={(value) => setForm((prev) => ({ ...prev, description: value }))}
                     placeholder="Add rich details about the doctor"
                     modules={{
                       toolbar: [
@@ -293,6 +351,7 @@ export default function EditDoctorPage({ params }) {
                     }}
                   />
                 </div>
+
               </div>
 
               <div className="space-y-3">
@@ -351,42 +410,89 @@ export default function EditDoctorPage({ params }) {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <p className="text-sm text-slate-300">Photo</p>
-                  <p className="text-xs text-slate-500">Drag & drop or click to upload.</p>
-                </div>
-
-                <div
-                  className="border-2 border-dashed border-slate-700 bg-slate-900/40 rounded-xl p-4 flex flex-col gap-3 items-center justify-center text-slate-300 cursor-pointer hover:border-teal-500 transition"
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <input
-                    type="file"
-                    accept="image/*"
-                    ref={fileInputRef}
-                    className="hidden"
-                    onChange={handleFileChange}
-                  />
-                  <div className="text-center space-y-1">
-                    <p className="font-medium">Drop an image here or click to upload</p>
-                    <p className="text-xs text-slate-500">Recommended: square, under 5MB. JPG or PNG.</p>
+              <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-white">Media</p>
+                    <p className="text-xs text-slate-400">Styled to match the patient review uploader.</p>
                   </div>
-                  {fileName && <p className="text-xs text-teal-300">Selected: {fileName}</p>}
-                  {preview && (
-                    <div className="w-full grid grid-cols-1 md:grid-cols-[180px_1fr] gap-4 items-center">
-                      <img
-                        src={preview}
-                        alt="Preview"
-                        className="w-full max-w-[180px] h-32 object-cover rounded-lg border border-slate-700"
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <MediaCard title="Profile photo" helper="Drop or click to upload the main headshot.">
+                    <div
+                      className="border-2 border-dashed border-slate-700 bg-slate-900/60 rounded-xl p-4 flex flex-col gap-3 items-center justify-center text-slate-300 cursor-pointer hover:border-teal-500 transition"
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        ref={fileInputRef}
+                        className="hidden"
+                        onChange={handleFileChange}
                       />
-                      <p className="text-sm text-slate-400">
-                        This preview will be uploaded to Cloudinary and saved with the doctor.
-                      </p>
+                      <div className="text-center space-y-1">
+                        <p className="font-medium">Drop an image here or click to upload</p>
+                        <p className="text-xs text-slate-500">Recommended: square, under 5MB. JPG or PNG.</p>
+                      </div>
+                      {fileName && <p className="text-xs text-teal-300">Selected: {fileName}</p>}
                     </div>
-                  )}
+                    {preview && (
+                      <div className="w-full grid grid-cols-1 md:grid-cols-[140px_1fr] gap-3 items-center">
+                        <img
+                          src={preview}
+                          alt="Preview"
+                          className="w-full max-w-[140px] h-28 object-cover rounded-lg border border-slate-700"
+                        />
+                        <p className="text-xs text-slate-400">This preview will be uploaded to Cloudinary and saved.</p>
+                      </div>
+                    )}
+                  </MediaCard>
+
+                  <MediaCard title="Gallery images" helper="Upload additional photos.">
+                    <UploadBox
+                      accept="image/png,image/jpeg,image/webp"
+                      multiple
+                      onChange={handleGalleryFiles}
+                      label="Upload images"
+                    />
+                    {/* URL paste removed per request; uploads only */}
+                    {(form.galleryImages || []).length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {form.galleryImages.map((img, idx) => (
+                          <Thumb key={img + idx} src={img} onRemove={() => removeGalleryImage(idx)} />
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-[11px] text-slate-500">Accepted: JPG/PNG/WEBP. Max 10 images.</p>
+                  </MediaCard>
+
+                  <MediaCard title="Profile video" helper="Upload a video or paste a link.">
+                    <UploadBox
+                      accept="video/mp4,video/quicktime,video/webm"
+                      onChange={handleVideoFileChange}
+                      label="Upload video file"
+                    />
+                    <input
+                      name="videoUrl"
+                      value={form.videoUrl}
+                      onChange={handleInputChange}
+                      className={inputClasses}
+                      placeholder="https://youtube.com/embed/..."
+                    />
+                    {videoPreview || form.videoUrl ? (
+                      <div className="overflow-hidden rounded-lg border border-slate-700 bg-black">
+                        <iframe
+                          src={videoPreview || form.videoUrl}
+                          className="w-full aspect-video"
+                          title="Doctor video preview"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        />
+                      </div>
+                    ) : null}
+                  </MediaCard>
                 </div>
               </div>
             </>
@@ -411,6 +517,52 @@ export default function EditDoctorPage({ params }) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function MediaCard({ title, helper, children }) {
+  return (
+    <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/70 p-4">
+      <div>
+        <p className="text-sm font-semibold text-white">{title}</p>
+        {helper ? <p className="text-xs text-slate-400">{helper}</p> : null}
+      </div>
+      <div className="space-y-2">{children}</div>
+    </div>
+  );
+}
+
+function UploadBox({ accept, multiple, onChange, label }) {
+  return (
+    <label className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-700 bg-slate-900/60 p-4 text-slate-300 cursor-pointer hover:border-teal-500 hover:bg-slate-900">
+      <input
+        type="file"
+        accept={accept}
+        multiple={multiple}
+        className="hidden"
+        onChange={(e) => {
+          if (!onChange) return;
+          onChange(e);
+        }}
+      />
+      <span className="text-xs text-slate-400">{label}</span>
+      <span className="text-[11px] text-slate-500">{accept || ""}</span>
+    </label>
+  );
+}
+
+function Thumb({ src, onRemove }) {
+  return (
+    <div className="relative h-20 w-20 rounded-lg overflow-hidden border border-slate-700 bg-slate-800">
+      <img src={src} className="h-full w-full object-cover" alt="Gallery" />
+      <button
+        type="button"
+        onClick={onRemove}
+        className="absolute top-1 right-1 bg-black/70 text-white rounded-full text-xs px-1"
+      >
+        ×
+      </button>
     </div>
   );
 }

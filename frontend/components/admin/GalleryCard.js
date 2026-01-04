@@ -1,6 +1,7 @@
 "use client";
 
 import { PencilSquareIcon, TrashIcon, PhotoIcon, FilmIcon, LinkIcon } from "@heroicons/react/24/solid";
+import { PublishToggle } from "./PublishToggle";
 
 function pickPreview(item) {
   if (item.images?.length) return { type: "image", src: item.images[0] };
@@ -9,7 +10,7 @@ function pickPreview(item) {
   return null;
 }
 
-export default function GalleryCard({ item, onDelete, onEdit }) {
+export default function GalleryCard({ item, onDelete, onEdit, onToggle, toggleDisabled = false }) {
   const preview = pickPreview(item);
   const photoCount = item.images?.length || 0;
   const videoCount = item.videos?.length || 0;
@@ -50,9 +51,12 @@ export default function GalleryCard({ item, onDelete, onEdit }) {
             <LinkIcon className="h-4 w-4 text-teal-300" /> {ytCount} YouTube
           </span>
         </div>
-        <p className="text-[11px] text-slate-500">
-          {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""}
-        </p>
+        <div className="flex items-center justify-between text-[11px] text-slate-500">
+          <p>{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""}</p>
+          {onToggle && (
+            <PublishToggle status={item.isPublished ? "published" : "draft"} onToggle={onToggle} disabled={toggleDisabled} />
+          )}
+        </div>
       </div>
 
       <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition flex items-start justify-end p-2 gap-2">

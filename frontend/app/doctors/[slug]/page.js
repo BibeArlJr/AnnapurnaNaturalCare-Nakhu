@@ -1,8 +1,28 @@
 import { apiGet } from '@/lib/api';
 import Link from 'next/link';
 import DoctorCard from '@/components/DoctorCard';
+import DoctorHeroCarousel from '@/components/DoctorHeroCarousel';
 
 export const revalidate = 0;
+
+function getVideoEmbedUrl(rawUrl) {
+  if (!rawUrl) return '';
+  try {
+    const url = new URL(rawUrl);
+    const host = url.hostname.toLowerCase();
+    if (host.includes('youtu.be')) {
+      const id = url.pathname.replace('/', '');
+      if (id) return `https://www.youtube.com/embed/${id}`;
+    }
+    if (host.includes('youtube.com')) {
+      const id = url.searchParams.get('v') || url.pathname.split('/').pop();
+      if (id) return `https://www.youtube.com/embed/${id}`;
+    }
+    return rawUrl;
+  } catch (err) {
+    return rawUrl;
+  }
+}
 
 export async function generateMetadata({ params }) {
   try {
@@ -30,7 +50,8 @@ export default async function DoctorDetail({ params }) {
     let related = [];
     try {
       const allDocsRes = await apiGet('/doctors');
-      const allDocs = allDocsRes?.data || [];
+      const filterPublished = (list = []) => (list || []).filter((d) => (d.status || "").toLowerCase() === "published");
+      const allDocs = filterPublished(allDocsRes?.data || []);
       const sameDept = allDocs.filter(
         (d) => d._id !== doc._id && (d.departmentId?._id || d.departmentId) === (doc.departmentId?._id || doc.departmentId)
       );
@@ -42,6 +63,8 @@ export default async function DoctorDetail({ params }) {
 
     const specialty = doc.specialty || doc.specialties?.[0] || 'Specialist';
     const qualifications = Array.isArray(doc.medicalQualifications) ? doc.medicalQualifications.filter((q) => q && q.degree) : [];
+    const galleryImages = Array.isArray(doc.galleryImages) ? doc.galleryImages.filter(Boolean) : [];
+    const videoEmbedUrl = getVideoEmbedUrl(doc.videoUrl);
 
     return (
       <div className="min-h-screen bg-neutral-50">
@@ -67,43 +90,7 @@ export default async function DoctorDetail({ params }) {
                   ) : null}
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white/90 text-neutral-900 rounded-xl border border-white/70 shadow-md p-5 h-full">
-                  <h3 className="text-lg font-semibold text-neutral-800 mb-3">Doctor Details</h3>
-                  <ul className="space-y-2 text-neutral-700 text-sm">
-                    <li>
-                      <strong>Specialty:</strong> {specialty}
-                    </li>
-                    {doc.degree ? (
-                      <li>
-                        <strong>Degree:</strong> {doc.degree}
-                      </li>
-                    ) : null}
-                    {doc.experienceYears ? (
-                      <li>
-                        <strong>Experience:</strong> {doc.experienceYears} years
-                      </li>
-                    ) : null}
-                    {doc.department?.name ? (
-                      <li>
-                        <strong>Department:</strong> {doc.department.name}
-                      </li>
-                    ) : null}
-                  </ul>
-                </div>
-                <div className="bg-white/90 text-neutral-900 rounded-xl border border-white/70 shadow-md p-5 h-full">
-                  <h3 className="text-lg font-semibold text-neutral-800 mb-3">Book an Appointment</h3>
-                  <p className="text-neutral-700 text-sm mb-4">Choose a date and time to book with {doc.name}.</p>
-                  <div className="flex justify-center">
-                    <Link
-                      href={`/appointments?doctor=${doc.slug}`}
-                      className="inline-block text-center bg-primary-teal hover:bg-primary-dark text-white font-semibold px-4 py-2 rounded-lg transition"
-                    >
-                      View Availability
-                    </Link>
-                  </div>
-                </div>
-              </div>
+              <DoctorHeroCarousel doc={doc} specialty={specialty} galleryImages={galleryImages} />
             </div>
           </div>
         </div>
@@ -121,6 +108,20 @@ export default async function DoctorDetail({ params }) {
                 <p className="text-neutral-600 leading-relaxed">
                   {doc.bio || 'This doctor has not added a biography yet.'}
                 </p>
+              )}
+              {videoEmbedUrl && (
+                <div className="mt-6 space-y-3">
+                  <h3 className="text-lg font-semibold text-neutral-800">Profile Video</h3>
+                  <div className="aspect-video rounded-xl overflow-hidden bg-neutral-200">
+                    <iframe
+                      src={videoEmbedUrl}
+                      title={`${doc.name} video`}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
               )}
               {qualifications.length > 0 && (
                 <div className="mt-6 space-y-3">

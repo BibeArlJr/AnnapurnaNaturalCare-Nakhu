@@ -3,7 +3,22 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
-export default function BlogCard({ blog }) {
+function Highlight({ text, term }) {
+  if (!term) return text;
+  const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")})`, "i");
+  const parts = (text || "").split(regex);
+  return parts.map((part, idx) =>
+    regex.test(part) ? (
+      <mark key={idx} className="bg-yellow-100 text-inherit">
+        {part}
+      </mark>
+    ) : (
+      <span key={idx}>{part}</span>
+    )
+  );
+}
+
+export default function BlogCard({ blog, highlightTerm }) {
   const image =
     blog.coverImage ||
     blog.mediaUrl ||
@@ -37,9 +52,13 @@ export default function BlogCard({ blog }) {
               {blog.categoryId?.name || blog.category}
             </p>
           )}
-          <h3 className="text-lg font-semibold text-[#10231a] leading-snug">{blog.title}</h3>
+          <h3 className="text-lg font-semibold text-[#10231a] leading-snug">
+            <Highlight text={blog.title} term={highlightTerm} />
+          </h3>
           {excerpt && (
-            <p className="text-sm text-[#5a695e] leading-relaxed line-clamp-3">{excerpt}</p>
+            <p className="text-sm text-[#5a695e] leading-relaxed line-clamp-3">
+              <Highlight text={excerpt} term={highlightTerm} />
+            </p>
           )}
           <span className="inline-flex items-center gap-1 text-sm font-medium text-primary-teal hover:underline">
             Read article →

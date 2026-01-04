@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/solid";
+import { PublishToggle, StatusPill } from "./PublishToggle";
 
-export default function DoctorCard({ doctor, onDelete }) {
+export default function DoctorCard({ doctor, onDelete, onToggleStatus, updatingStatus }) {
   const deptName = doctor?.departmentId?.name || doctor?.department?.name || "Department";
   const experience =
     doctor?.experienceYears || doctor?.experience ? `${doctor.experienceYears || doctor.experience} yrs` : null;
@@ -16,10 +17,20 @@ export default function DoctorCard({ doctor, onDelete }) {
         className="w-full h-32 object-cover rounded-xl mb-3"
         loading="lazy"
       />
-      <div className="min-w-0 mb-2">
-        <h3 className="text-lg font-semibold text-white line-clamp-1">{doctor.name}</h3>
-        <p className="text-sm text-teal-300 line-clamp-1">{deptName}</p>
-        {experience && <p className="text-xs text-slate-400">Experience: {experience}</p>}
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="min-w-0">
+          <h3 className="text-lg font-semibold text-white line-clamp-1">{doctor.name}</h3>
+          <p className="text-sm text-teal-300 line-clamp-1">{deptName}</p>
+          {experience && <p className="text-xs text-slate-400">Experience: {experience}</p>}
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <StatusPill status={doctor.status} />
+          <PublishToggle
+            status={doctor.status}
+            onToggle={() => onToggleStatus?.(doctor)}
+            disabled={updatingStatus}
+          />
+        </div>
       </div>
 
       <p className="text-gray-400 text-sm line-clamp-3 mb-4">

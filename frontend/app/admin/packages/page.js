@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { MagnifyingGlassIcon, PlusIcon, TagIcon } from "@heroicons/react/24/solid";
-import { apiGet, apiDelete } from "@/lib/api";
+import { apiGet, apiDelete, apiPatch } from "@/lib/api";
 import PackageCard from "@/components/admin/PackageCard";
 import AddPackageModal from "@/components/admin/AddPackageModal";
 import EditPackageModal from "@/components/admin/EditPackageModal";
@@ -14,11 +14,12 @@ export default function AdminPackagesPage() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editPkg, setEditPkg] = useState(null);
+  const [updatingId, setUpdatingId] = useState(null);
 
   async function loadPackages() {
     setLoading(true);
     try {
-      const res = await apiGet("/packages");
+      const res = await apiGet("/packages?includeDrafts=true");
       const data = res?.data || res || [];
       setPackages(data);
       setFiltered(data);
@@ -50,6 +51,25 @@ export default function AdminPackagesPage() {
       setFiltered((prev) => prev.filter((p) => p._id !== id));
     } catch (err) {
       alert(err.message || "Failed to delete package");
+    }
+  }
+
+  function syncStatus(id, status) {
+    setPackages((prev) => prev.map((p) => (p._id === id ? { ...p, status } : p)));
+    setFiltered((prev) => prev.map((p) => (p._id === id ? { ...p, status } : p)));
+  }
+
+  async function handleToggleStatus(pkg) {
+    const nextStatus = pkg.status === "published" ? "draft" : "published";
+    syncStatus(pkg._id, nextStatus);
+    setUpdatingId(pkg._id);
+    try {
+      await apiPatch(`/packages/${pkg._id}/status`, { status: nextStatus });
+    } catch (err) {
+      syncStatus(pkg._id, pkg.status);
+      alert(err.message || "Failed to update status");
+    } finally {
+      setUpdatingId(null);
     }
   }
 
@@ -108,6 +128,8 @@ export default function AdminPackagesPage() {
               pkg={pkg}
               onDelete={handleDelete}
               onEdit={(p) => setEditPkg(p)}
+              onToggleStatus={handleToggleStatus}
+              updatingStatus={updatingId === pkg._id}
             />
           ))}
         </div>

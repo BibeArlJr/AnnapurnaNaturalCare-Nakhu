@@ -70,6 +70,7 @@ exports.create = async (req, res) => {
       images,
       videos,
       youtubeLinks,
+      isPublished: typeof payload.isPublished === 'boolean' ? payload.isPublished : false,
     });
 
     return res.status(201).json({ success: true, data: newItem });
@@ -109,6 +110,9 @@ exports.update = async (req, res) => {
     existing.images = images;
     existing.videos = videos;
     existing.youtubeLinks = youtubeLinks;
+    if (typeof payload.isPublished === 'boolean') {
+      existing.isPublished = payload.isPublished;
+    }
 
     const updated = await existing.save();
 

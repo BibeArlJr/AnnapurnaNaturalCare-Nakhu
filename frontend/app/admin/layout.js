@@ -13,6 +13,8 @@ import {
   CubeIcon,
   EnvelopeIcon,
   ArrowRightOnRectangleIcon,
+  GlobeAmericasIcon,
+  CurrencyDollarIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/context/AuthContext';
 
@@ -33,9 +35,47 @@ export default function AdminLayout({ children }) {
         { href: '/admin/appointments/calendar', label: 'Calendar' },
       ],
     },
-    { href: '/admin/blogs', label: 'Blog', icon: NewspaperIcon },
+    { href: '/admin/blogs', label: 'Blog Articles', icon: NewspaperIcon },
+    { href: '/admin/reviews', label: 'Patient Reviews', icon: NewspaperIcon },
     { href: '/admin/gallery', label: 'Gallery', icon: PhotoIcon },
-    { href: '/admin/packages', label: 'Packages', icon: CubeIcon },
+    {
+      label: 'Health Packages',
+      icon: CubeIcon,
+      children: [
+        { href: '/admin/packages', label: 'Manage Packages' },
+        { href: '/admin/package-bookings', label: 'Package Bookings' },
+        { href: '/admin/package-bookings/calendar', label: 'Calendar' },
+        { href: '/admin/treatment-types', label: 'Treatment Types' },
+      ],
+    },
+    {
+      label: 'Retreat Program',
+      icon: GlobeAmericasIcon,
+      children: [
+        { href: '/admin/retreat-programs', label: 'Manage Programs' },
+        { href: '/admin/retreat-destinations', label: 'Retreat Destinations' },
+        { href: '/admin/retreat-partner-hotels', label: 'Partner Hotels' },
+        { href: '/admin/retreat-bookings', label: 'Retreat Bookings' },
+      ],
+    },
+  {
+    label: 'Health Programs',
+    icon: CubeIcon,
+    children: [
+      { href: '/admin/health-programs', label: 'Manage Programs' },
+      { href: '/admin/health-program-bookings', label: 'Health Program Bookings' },
+    ],
+  },
+  {
+    label: 'Courses',
+    icon: Squares2X2Icon,
+    children: [
+      { href: '/admin/courses', label: 'Manage Courses' },
+      { href: '/admin/course-categories', label: 'Course Categories' },
+      { href: '/admin/course-bookings', label: 'Course Bookings' },
+    ],
+  },
+    { href: '/admin/billing', label: 'Billing', icon: CurrencyDollarIcon },
     { href: '/admin/messages', label: 'Messages', icon: EnvelopeIcon },
   ];
 

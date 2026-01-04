@@ -1,8 +1,9 @@
 "use client";
 
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/solid";
+import { PublishToggle, StatusPill } from "./PublishToggle";
 
-export default function PackageCard({ pkg, onEdit, onDelete }) {
+export default function PackageCard({ pkg, onEdit, onDelete, onToggleStatus, updatingStatus }) {
   return (
     <div className="bg-[#11151c] border border-white/10 rounded-xl p-4 hover:border-teal-600/40 transition shadow-sm">
       <img
@@ -11,13 +12,23 @@ export default function PackageCard({ pkg, onEdit, onDelete }) {
         className="w-full h-32 object-cover rounded-xl mb-3"
         loading="lazy"
       />
-      <div className="min-w-0 mb-2">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="text-lg font-semibold text-white line-clamp-1">{pkg.name}</h3>
+      <div className="min-w-0 mb-2 flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-lg font-semibold text-white line-clamp-1">{pkg.name}</h3>
+          </div>
+          <p className="text-sm text-teal-300 font-semibold">
+            {pkg.price ? `$${pkg.price}` : "Price N/A"} {pkg.duration && `· ${pkg.duration}`}
+          </p>
         </div>
-        <p className="text-sm text-teal-300 font-semibold">
-          {pkg.price ? `$${pkg.price}` : "Price N/A"} {pkg.duration && `· ${pkg.duration}`}
-        </p>
+        <div className="flex flex-col items-end gap-2">
+          <StatusPill status={pkg.status} />
+          <PublishToggle
+            status={pkg.status}
+            onToggle={() => onToggleStatus?.(pkg)}
+            disabled={updatingStatus}
+          />
+        </div>
       </div>
 
       <p className="text-sm text-gray-400 line-clamp-3 mb-4">{pkg.shortDescription || "No description."}</p>

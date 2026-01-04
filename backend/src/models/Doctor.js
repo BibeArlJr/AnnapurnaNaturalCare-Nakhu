@@ -22,6 +22,7 @@ const DoctorSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     slug: { type: String, unique: true },
+    status: { type: String, enum: ['draft', 'published'], default: 'draft', index: true },
     departmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Department', required: true },
     email: { type: String },
     phone: { type: String },
@@ -31,6 +32,8 @@ const DoctorSchema = new mongoose.Schema(
     bio: { type: String },
     description: { type: String },
     photo: { type: String },
+    galleryImages: [{ type: String }],
+    videoUrl: { type: String },
     medicalQualifications: [
       {
         degree: { type: String, required: true },

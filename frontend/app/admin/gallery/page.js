@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PlusIcon, PhotoIcon } from "@heroicons/react/24/solid";
-import { apiGet, apiDelete } from "@/lib/api";
+import { apiGet, apiDelete, apiPut } from "@/lib/api";
 import AddGalleryModal from "@/components/admin/AddGalleryModal";
 import GalleryCard from "@/components/admin/GalleryCard";
 
@@ -12,6 +12,7 @@ export default function AdminGalleryPage() {
   const [error, setError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [updatingId, setUpdatingId] = useState(null);
 
   async function loadGallery() {
     setLoading(true);
@@ -29,6 +30,19 @@ export default function AdminGalleryPage() {
   useEffect(() => {
     loadGallery();
   }, []);
+
+  async function handleToggle(item) {
+    setUpdatingId(item._id);
+    try {
+      const res = await apiPut(`/gallery/${item._id}`, { isPublished: !item.isPublished });
+      const next = res?.data || res;
+      setItems((prev) => prev.map((it) => (it._id === item._id ? { ...it, ...next } : it)));
+    } catch (err) {
+      alert(err.message || "Failed to update publish status");
+    } finally {
+      setUpdatingId(null);
+    }
+  }
 
   async function handleDelete(id) {
     if (!confirm("Delete this gallery item?")) return;
@@ -97,6 +111,8 @@ export default function AdminGalleryPage() {
                 setEditingItem(selected);
                 setShowAddModal(true);
               }}
+              onToggle={() => handleToggle(item)}
+              toggleDisabled={updatingId === item._id}
             />
           ))}
         </div>

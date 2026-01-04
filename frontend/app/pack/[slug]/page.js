@@ -37,7 +37,7 @@ export default async function PackageDetailPage({ params }) {
 
         <p className="text-gray-800 whitespace-pre-line">{pkg.description}</p>
 
-        <p className="text-2xl text-blue-700 font-semibold">NPR {pkg.price}</p>
+        <p className="text-2xl text-blue-700 font-semibold">${pkg.price}</p>
       </div>
     );
   } catch (err) {

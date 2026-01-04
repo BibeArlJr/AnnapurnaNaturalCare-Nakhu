@@ -47,6 +47,13 @@ export default function AppointmentDetailModal({
   const [showReschedule, setShowReschedule] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelForm, setCancelForm] = useState({ message: "", notifyPatient: true });
+  const [showEdit, setShowEdit] = useState(false);
+  const [editForm, setEditForm] = useState({
+    date: "",
+    time: "",
+    doctorId: "",
+    message: "",
+  });
   const [rescheduleForm, setRescheduleForm] = useState({
     date: "",
     time: "",
@@ -62,6 +69,12 @@ export default function AppointmentDetailModal({
         date: appt.date ? appt.date.split("T")[0] : "",
         time: appt.time || "",
         message: "",
+      });
+      setEditForm({
+        date: appt.date ? appt.date.split("T")[0] : "",
+        time: appt.time || "",
+        doctorId: appt.doctorId || appt.doctor?._id || appt.doctorId?._id || "",
+        message: appt.message || "",
       });
     }
   }, [appt]);
@@ -239,6 +252,13 @@ export default function AppointmentDetailModal({
                 Reschedule
               </button>
               <button
+                onClick={() => setShowEdit(true)}
+                className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-60"
+                disabled={loading}
+              >
+                Edit
+              </button>
+              <button
                 onClick={() => updateStatus(undefined, { includeMessage: true })}
                 className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60"
                 disabled={loading}
@@ -371,6 +391,96 @@ export default function AppointmentDetailModal({
                   disabled={loading}
                 >
                   Cancel Appointment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showEdit && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className="relative w-full max-w-md bg-[#0f131a] border border-white/10 rounded-2xl p-5 space-y-3 text-white">
+            <button
+              onClick={() => setShowEdit(false)}
+              className="absolute top-3 right-3 text-gray-300 hover:text-white"
+            >
+              ✕
+            </button>
+            <h3 className="text-lg font-semibold">Edit Appointment</h3>
+            <form
+              className="space-y-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                try {
+                  await apiPut(`/appointments/${appt._id}`, {
+                    date: editForm.date || appt.date,
+                    time: editForm.time || appt.time,
+                    doctorId: editForm.doctorId || appt.doctorId,
+                    adminMessage: editForm.message || adminMessage,
+                  });
+                  reload?.();
+                  setShowEdit(false);
+                  onClose?.();
+                } catch (err) {
+                  alert(getApiErrorMessage(err, "Failed to edit appointment"));
+                }
+                setLoading(false);
+              }}
+            >
+              <div className="space-y-1">
+                <label className="text-sm text-slate-300">Date</label>
+                <input
+                  type="date"
+                  value={editForm.date}
+                  onChange={(e) => setEditForm((p) => ({ ...p, date: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-slate-300">Time</label>
+                <input
+                  type="time"
+                  value={editForm.time}
+                  onChange={(e) => setEditForm((p) => ({ ...p, time: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-slate-300">Doctor ID</label>
+                <input
+                  type="text"
+                  value={editForm.doctorId}
+                  onChange={(e) => setEditForm((p) => ({ ...p, doctorId: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="Doctor ID"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-slate-300">Notes</label>
+                <textarea
+                  rows={3}
+                  value={editForm.message}
+                  onChange={(e) => setEditForm((p) => ({ ...p, message: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+                  placeholder="Update notes"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEdit(false)}
+                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 disabled:opacity-60"
+                  disabled={loading}
+                >
+                  Save
                 </button>
               </div>
             </form>

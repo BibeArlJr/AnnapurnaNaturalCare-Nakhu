@@ -18,6 +18,19 @@ export default function AdminAppointmentsPage() {
   const [cancelForm, setCancelForm] = useState({ message: "", notifyPatient: true });
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [editModal, setEditModal] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [editForm, setEditForm] = useState({
+    patientName: "",
+    patientEmail: "",
+    patientPhone: "",
+    date: "",
+    time: "",
+    service: "",
+    doctor: "",
+    status: "pending",
+    notifyPatient: false,
+  });
 
   const todayStr = dayjs().format("YYYY-MM-DD");
   const tomorrowStr = dayjs().add(1, "day").format("YYYY-MM-DD");
@@ -80,6 +93,23 @@ export default function AdminAppointmentsPage() {
   function openAppointmentDetails(appt) {
     setSelectedAppointment(appt);
     setShowDetailsModal(true);
+  }
+
+  function openEdit(appt) {
+    setEditTarget(appt);
+    setEditForm({
+      patientName: appt.patientName || appt.name || "",
+      patientEmail: appt.patientEmail || appt.email || "",
+      patientPhone: appt.patientPhone || appt.phone || "",
+      date: normalizedDate(appt.date) || "",
+      time: appt.time || "",
+      service: appt.service || appt.departmentName || "",
+      doctor: appt.doctorName || appt.doctor || "",
+      status: appt.status || "pending",
+      notifyPatient: false,
+      message: appt.message || "",
+    });
+    setEditModal(true);
   }
 
   function openReschedule(appt) {
@@ -241,6 +271,12 @@ export default function AdminAppointmentsPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
+                  onClick={() => openEdit(apt)}
+                  className="px-3 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700 text-xs"
+                >
+                  Edit
+                </button>
+                <button
                   onClick={() => handleStatus(apt, "confirmed")}
                   className="px-3 py-2 rounded-lg bg-teal-600 text-white hover:bg-teal-500 text-xs"
                 >
@@ -263,6 +299,12 @@ export default function AdminAppointmentsPage() {
                   className="px-3 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700 text-xs"
                 >
                   Reschedule
+                </button>
+                <button
+                  onClick={() => handleDelete(apt)}
+                  className="px-3 py-2 rounded-lg bg-slate-700 text-white hover:bg-slate-600 text-xs"
+                >
+                  Delete
                 </button>
               </div>
             </div>
@@ -381,6 +423,12 @@ export default function AdminAppointmentsPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
+                  onClick={() => openEdit(apt)}
+                  className="px-3 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700 text-xs"
+                >
+                  Edit
+                </button>
+                <button
                   onClick={() => handleStatus(apt, "confirmed")}
                   className="px-3 py-2 rounded-lg bg-teal-600 text-white hover:bg-teal-500 text-xs"
                 >
@@ -493,6 +541,152 @@ export default function AdminAppointmentsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {editModal && editTarget && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className="relative w-full max-w-2xl bg-[#0f131a] border border-white/10 rounded-2xl p-6 space-y-4 text-white">
+            <button
+              onClick={() => setEditModal(false)}
+              className="absolute top-3 right-3 text-gray-300 hover:text-white"
+            >
+              ✕
+            </button>
+            <h3 className="text-lg font-semibold">Edit Appointment</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-sm text-slate-300">Patient Name</label>
+                <input
+                  value={editForm.patientName}
+                  onChange={(e) => setEditForm((p) => ({ ...p, patientName: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-slate-300">Email</label>
+                <input
+                  type="email"
+                  value={editForm.patientEmail}
+                  onChange={(e) => setEditForm((p) => ({ ...p, patientEmail: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-slate-300">Phone</label>
+                <input
+                  value={editForm.patientPhone}
+                  onChange={(e) => setEditForm((p) => ({ ...p, patientPhone: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-slate-300">Date</label>
+                <input
+                  type="date"
+                  value={editForm.date}
+                  onChange={(e) => setEditForm((p) => ({ ...p, date: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-slate-300">Time</label>
+                <input
+                  type="time"
+                  value={editForm.time}
+                  onChange={(e) => setEditForm((p) => ({ ...p, time: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-slate-300">Department / Service</label>
+                <input
+                  value={editForm.service}
+                  onChange={(e) => setEditForm((p) => ({ ...p, service: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-slate-300">Doctor</label>
+                <input
+                  value={editForm.doctor}
+                  onChange={(e) => setEditForm((p) => ({ ...p, doctor: e.target.value, doctorName: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-slate-300">Status</label>
+                <select
+                  value={editForm.status}
+                  onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  {["pending", "confirmed", "rescheduled", "cancelled", "completed"].map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1 md:col-span-2">
+                <label className="text-sm text-slate-300">Notes / Message</label>
+                <textarea
+                  rows={3}
+                  value={editForm.message || ""}
+                  onChange={(e) => setEditForm((p) => ({ ...p, message: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm text-slate-300 md:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={editForm.notifyPatient}
+                  onChange={(e) => setEditForm((p) => ({ ...p, notifyPatient: e.target.checked }))}
+                  className="rounded border-slate-600 bg-slate-800"
+                />
+                Notify patient by email about this change
+              </label>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setEditModal(false)}
+                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white"
+              >
+                Close
+              </button>
+              <button
+                onClick={async () => {
+                  if (!editForm.patientName || !editForm.patientPhone) {
+                    alert("Name and phone are required");
+                    return;
+                  }
+                  try {
+                    await apiPut(`/appointments/${editTarget._id}`, {
+                      patientName: editForm.patientName,
+                      patientEmail: editForm.patientEmail,
+                      patientPhone: editForm.patientPhone,
+                      date: editForm.date,
+                      time: editForm.time,
+                      service: editForm.service,
+                      doctor: editForm.doctor,
+                      doctorName: editForm.doctor,
+                      status: editForm.status,
+                      message: editForm.message,
+                      notifyPatient: editForm.notifyPatient,
+                    });
+                    setEditModal(false);
+                    setEditTarget(null);
+                    loadAppointments();
+                  } catch (err) {
+                    alert(err?.message || "Failed to update appointment");
+                  }
+                }}
+                className="px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white"
+              >
+                Save Changes
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -42,7 +42,18 @@ async function uploadFiles(files = [], folder, resourceType = 'image') {
 
 exports.getAll = async (req, res) => {
   try {
-    const items = await Blog.find().populate('categoryId', 'name slug');
+    const { status, includeDrafts } = req.query || {};
+    const query = {};
+
+    if (includeDrafts === 'true' || status === 'all') {
+      // no status filter
+    } else if (status) {
+      query.status = status;
+    } else {
+      query.status = 'published';
+    }
+
+    const items = await Blog.find(query).populate('categoryId', 'name slug');
     return res.json({ success: true, data: items });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Server Error' });
@@ -53,12 +64,13 @@ exports.getOne = async (req, res) => {
   const { id } = req.params;
 
   try {
+    const includeDrafts = req.query?.includeDrafts === 'true' || req.query?.status === 'all';
     const isObjectId = mongoose.Types.ObjectId.isValid(id);
     const item = isObjectId
       ? await Blog.findById(id).populate('categoryId', 'name slug')
       : await Blog.findOne({ slug: id }).populate('categoryId', 'name slug');
 
-    if (!item) {
+    if (!item || (!includeDrafts && item.status !== 'published')) {
       return res.status(404).json({ success: false, message: 'Not Found' });
     }
 
@@ -90,6 +102,7 @@ exports.create = async (req, res) => {
     const providedImages = toArrayField(payload.images);
     const providedVideos = toArrayField(payload.videos);
     const youtubeLinks = toArrayField(payload.youtubeLinks);
+    const tags = dedupe(toArrayField(payload.tags));
 
     let uploadedImages = [];
     let uploadedVideos = [];
@@ -105,6 +118,10 @@ exports.create = async (req, res) => {
       slug: payload.slug,
       categoryId: categoryIdToUse,
       category,
+      coverImage: payload.coverImage || uploadedImages[0] || providedImages[0],
+      author: payload.author,
+      tags,
+      publishedAt: payload.publishedAt || new Date(),
       images: dedupe([...providedImages, ...uploadedImages]),
       videos: dedupe([...providedVideos, ...uploadedVideos]),
       youtubeLinks,
@@ -151,6 +168,7 @@ exports.update = async (req, res) => {
     const providedImages = toArrayField(payload.images);
     const providedVideos = toArrayField(payload.videos);
     const providedYoutubeLinks = toArrayField(payload.youtubeLinks);
+    const tags = dedupe(toArrayField(payload.tags)) || existing.tags || [];
     const newYoutubeLinks = toArrayField(payload.newYoutubeLinks);
 
     const removeExistingImages = new Set(toArrayField(payload.removeExistingImages));
@@ -195,12 +213,39 @@ exports.update = async (req, res) => {
       videos,
       youtubeLinks,
       status: payload.status ?? existing.status,
+      coverImage: payload.coverImage ?? existing.coverImage,
+      author: payload.author ?? existing.author,
+      tags,
+      publishedAt: payload.publishedAt ?? existing.publishedAt,
     };
 
     const updated = await Blog.findByIdAndUpdate(id, updatePayload, { new: true });
     return res.json({ success: true, data: updated });
   } catch (error) {
     return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body || {};
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ success: false, message: 'Invalid ID' });
+  }
+  if (!['draft', 'published'].includes(status)) {
+    return res.status(400).json({ success: false, message: 'Invalid status' });
+  }
+
+  try {
+    const updatePayload = { status, publishedAt: status === 'published' ? new Date() : null };
+    const updated = await Blog.findByIdAndUpdate(id, updatePayload, { new: true });
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Not Found' });
+    }
+    return res.json({ success: true, data: updated });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
 

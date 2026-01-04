@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/solid";
+import { PublishToggle, StatusPill } from "./admin/PublishToggle";
 
-export default function DepartmentCardAdmin({ dept, onDelete }) {
+export default function DepartmentCardAdmin({ dept, onDelete, onToggleStatus, updatingStatus }) {
   return (
     <div className="bg-[#11151c] border border-white/10 rounded-xl p-5 hover:border-teal-600/40 transition shadow-sm">
       <img
@@ -10,7 +11,17 @@ export default function DepartmentCardAdmin({ dept, onDelete }) {
         className="w-full h-32 object-cover rounded-xl mb-3"
         loading="lazy"
       />
-      <h3 className="text-lg font-semibold text-white mb-2 line-clamp-1">{dept.name}</h3>
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <h3 className="text-lg font-semibold text-white line-clamp-1">{dept.name}</h3>
+        <div className="flex flex-col items-end gap-2">
+          <StatusPill status={dept.status} />
+          <PublishToggle
+            status={dept.status}
+            onToggle={() => onToggleStatus?.(dept)}
+            disabled={updatingStatus}
+          />
+        </div>
+      </div>
 
       <p className="text-gray-400 text-sm line-clamp-3 mb-4">
         {dept.description || "No description provided."}

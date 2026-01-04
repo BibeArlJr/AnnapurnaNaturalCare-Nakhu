@@ -20,7 +20,14 @@ exports.uploadSingle = async (req, res) => {
 
     console.log("BASE64 LENGTH:", base64.length);
 
-    const result = await uploadImage(dataURI, req.body.folder || "general");
+    const options = {};
+    if (req.file.mimetype?.startsWith("video/")) {
+      options.resource_type = "video";
+    } else if (req.file.mimetype?.startsWith("application/")) {
+      options.resource_type = "auto";
+    }
+
+    const result = await uploadImage(dataURI, req.body.folder || "general", options);
 
     console.log("UPLOAD RESULT:", result);
 
