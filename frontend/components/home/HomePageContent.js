@@ -29,6 +29,9 @@ const sectionWrapper = "py-14";
 const sectionContainer = "max-w-7xl mx-auto px-4";
 
 export default function HomePageContent() {
+  const [heroImages, setHeroImages] = useState([]);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [packages, setPackages] = useState([]);
@@ -135,6 +138,31 @@ export default function HomePageContent() {
     }
   }, [programSlide, programSlides]);
 
+  useEffect(() => {
+    if (!heroImages.length) return;
+    setImageLoaded(false);
+    const current = heroImages[heroIndex];
+    if (current?.url) {
+      const img = new Image();
+      img.src = current.url;
+      img.onload = () => setImageLoaded(true);
+      img.onerror = () => setImageLoaded(true);
+    } else {
+      setImageLoaded(true);
+    }
+    const interval = setInterval(() => {
+      setHeroIndex((prev) => (prev + 1) % heroImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [heroImages.length, heroIndex]);
+
+  useEffect(() => {
+    if (!heroImages.length) {
+      setImageLoaded(true);
+    }
+  }, [heroImages.length]);
+
+
   function scrollProgramTo(slide) {
     const node = programScrollRef.current;
     if (!node) return;
@@ -147,7 +175,7 @@ export default function HomePageContent() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [depRes, docRes, pkgRes, blogRes, galRes, reviewRes, retreatRes] = await Promise.all([
+        const [depRes, docRes, pkgRes, blogRes, galRes, reviewRes, retreatRes, heroRes] = await Promise.all([
           apiGet("/departments"),
           apiGet("/doctors"),
           apiGet("/packages"),
@@ -155,6 +183,7 @@ export default function HomePageContent() {
           apiGet("/gallery"),
           apiGet("/patient-reviews?status=published"),
           apiGet("/retreat-programs"),
+          apiGet("/hero-images"),
         ]);
 
         setDepartments(onlyPublished(depRes?.data || depRes || []).slice(0, 6));
@@ -164,6 +193,7 @@ export default function HomePageContent() {
         setGalleryItems((galRes?.data || galRes || []).slice(0, 6));
         setReviews((reviewRes?.data || reviewRes || []).slice(0, 4));
         setRetreatPrograms(onlyPublished(retreatRes?.data || retreatRes || []).slice(0, 3));
+        setHeroImages((heroRes?.data || heroRes || []).slice(0, 6));
       } catch (err) {
         console.error("Home data load error:", err);
       } finally {
@@ -176,38 +206,98 @@ export default function HomePageContent() {
 
   return (
     <>
-      <section className="w-full bg-[#f4f8f5]">
-        <div className="max-w-6xl mx-auto px-4 min-h-[75vh] flex flex-col items-center justify-center text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-            viewport={{ once: true }}
-            className="space-y-6"
-          >
-            <p className="tracking-wide text-sm text-green-700">HOLISTIC HEALING · KATHMANDU</p>
+      <motion.section
+        className="hero-section relative overflow-hidden"
+        initial={{ opacity: 0, scale: 1.01 }}
+        animate={{ opacity: imageLoaded ? 1 : 0, scale: imageLoaded ? 1 : 1.01 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+      >
+        <div className="relative h-[90vh] w-full overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#dfe9e4] via-[#eef5f2] to-[#d7e4dd] z-0" />
+          <div className="absolute inset-0 z-0">
+            {heroImages.length > 0 ? (
+              heroImages.map((img, idx) => (
+                <motion.div
+                  key={img._id || img.url || idx}
+                  className="absolute inset-0"
+                  initial={{ opacity: 0, scale: 1.05 }}
+                  animate={{
+                    opacity: idx === heroIndex && imageLoaded ? 1 : 0,
+                    scale: idx === heroIndex ? 1 : 1.05,
+                  }}
+                  transition={{ duration: 1 }}
+                >
+                  <motion.div
+                    className="absolute inset-0 bg-center bg-cover brightness-95"
+                    initial={{ scale: 1.05 }}
+                    animate={{ scale: idx === heroIndex ? 1 : 1.05 }}
+                    transition={{ duration: 5 }}
+                    style={{
+                      backgroundImage: `url(${img.url})`,
+                    }}
+                  />
+                </motion.div>
+              ))
+            ) : (
+              <div className="absolute inset-0 bg-[#f4f8f5]" />
+            )}
+          </div>
 
-            <h1 className="text-3xl md:text-5xl font-semibold leading-tight text-gray-900">
-              Your path to natural healing begins here.
-            </h1>
+          {/* Permanent soft overlay for readability */}
+          <div className="absolute inset-0 pointer-events-none z-10 bg-gradient-to-b from-black/25 via-black/15 to-black/5" />
 
-            <p className="max-w-3xl mx-auto text-gray-600 text-base md:text-lg">
-              We combine naturopathy, yoga, Ayurveda, physiotherapy and lifestyle medicine to treat the root cause of
-              disease — not just the symptoms.
-            </p>
+          <div className="hero-content relative z-30 max-w-6xl mx-auto px-4 min-h-[90vh] flex flex-col items-center justify-center text-center">
+            <motion.div
+              initial="hidden"
+              animate={imageLoaded ? "visible" : "hidden"}
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.7, ease: "easeOut", staggerChildren: 0.12 },
+                },
+              }}
+              className="space-y-6 text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.35)]"
+            >
+              <motion.p variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }} className="tracking-wide text-sm text-green-100">
+                HOLISTIC HEALING · KATHMANDU
+              </motion.p>
 
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/appointments" className="px-6 py-3 rounded-full bg-green-700 text-white">
-                Book an appointment
-              </Link>
+              <motion.h1
+                variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                className="text-3xl md:text-5xl font-semibold leading-tight text-white"
+              >
+                Your path to natural healing begins here.
+              </motion.h1>
 
-              <Link href="/packages" className="px-6 py-3 rounded-full border border-green-700 text-green-700">
-                View health packages
-              </Link>
-            </div>
-          </motion.div>
+              <motion.p
+                variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                className="max-w-3xl mx-auto text-white/90 text-base md:text-lg"
+              >
+                We combine naturopathy, yoga, Ayurveda, physiotherapy and lifestyle medicine to treat the root cause of
+                disease — not just the symptoms.
+              </motion.p>
+
+              <motion.div
+                variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                className="flex flex-wrap justify-center gap-4"
+              >
+                <Link href="/appointments" className="px-6 py-3 rounded-full bg-green-700 text-white">
+                  Book an appointment
+                </Link>
+
+                <Link
+                  href="/packages"
+                  className="px-6 py-3 rounded-full border border-transparent bg-white text-green-800 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition"
+                >
+                  View health packages
+                </Link>
+              </motion.div>
+            </motion.div>
+          </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* QUICK ACCESS CARDS – subtle background */}
       <section className={`${sectionWrapper} bg-[#ecf3ee] pt-12`}>

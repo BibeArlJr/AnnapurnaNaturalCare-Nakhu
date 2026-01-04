@@ -38,6 +38,7 @@ export default function AdminLayout({ children }) {
     { href: '/admin/blogs', label: 'Blog Articles', icon: NewspaperIcon },
     { href: '/admin/reviews', label: 'Patient Reviews', icon: NewspaperIcon },
     { href: '/admin/gallery', label: 'Gallery', icon: PhotoIcon },
+    { href: '/admin/hero-images', label: 'Hero Banner Images', icon: PhotoIcon },
     {
       label: 'Health Packages',
       icon: CubeIcon,

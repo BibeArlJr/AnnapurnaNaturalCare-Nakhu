@@ -6,7 +6,7 @@ export const metadata = {
     "Annapurna Nature Cure Hospital offers naturopathy, yoga, Ayurveda, physiotherapy and lifestyle medicine in a calm, nature-focused environment in Kathmandu.",
 };
 
-export default async function HomePage() {
+export default function HomePage() {
   return (
     <main className="min-h-screen bg-[#F4F8F3]">
       <HomePageContent />

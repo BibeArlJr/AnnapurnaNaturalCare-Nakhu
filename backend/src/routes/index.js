@@ -26,6 +26,7 @@ const healthProgramBookingRoutes = require('./api/healthProgramBookingRoutes');
 const courseRoutes = require('./api/courseRoutes');
 const courseCategoryRoutes = require('./api/courseCategoryRoutes');
 const courseBookingRoutes = require('./api/courseBookingRoutes');
+const heroImageRoutes = require('./api/heroImageRoutes');
 
 const router = express.Router();
 
@@ -50,6 +51,7 @@ router.use('/health-program-bookings', healthProgramBookingRoutes);
 router.use('/courses', courseRoutes);
 router.use('/course-categories', courseCategoryRoutes);
 router.use('/course-bookings', courseBookingRoutes);
+router.use('/hero-images', heroImageRoutes);
 router.use('/retreat-destinations', retreatDestinationRoutes);
 router.use('/treatment-types', treatmentTypeRoutes);
 router.use('/messages', messageRoutes);
