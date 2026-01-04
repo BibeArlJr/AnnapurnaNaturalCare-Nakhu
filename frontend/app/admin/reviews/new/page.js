@@ -40,7 +40,8 @@ export default function NewReviewPage() {
         const fd = new FormData();
         fd.append("image", file);
         fd.append("folder", folder);
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
+        const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
+        const res = await fetch(`${base}/api/upload`, {
           method: "POST",
           body: fd,
           credentials: "include",

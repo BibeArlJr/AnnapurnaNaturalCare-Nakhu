@@ -13,10 +13,10 @@ export default async function BlogPage() {
   let blogs = [];
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
     if (!baseUrl) throw new Error('API base URL not configured');
 
-    const res = await fetch(`${baseUrl}/blogs`, { cache: 'no-store' });
+    const res = await fetch(`${baseUrl}/api/blogs`, { cache: 'no-store' });
     if (!res.ok) {
       throw new Error(`Failed to fetch blogs (${res.status})`);
     }

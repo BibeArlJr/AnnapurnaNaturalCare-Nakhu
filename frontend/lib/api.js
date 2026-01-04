@@ -1,4 +1,5 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+const BASE_URL = `${API_BASE}/api`;
 
 async function handleResponse(res) {
   const data = await res.json().catch(() => ({}));

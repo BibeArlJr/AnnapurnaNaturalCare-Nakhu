@@ -369,7 +369,8 @@ export default function RetreatProgramsPage() {
         .filter((g) => g.file)
         .forEach((g) => fd.append("galleryImages", g.file));
 
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/retreat-programs${editing ? `/${editing._id}` : ""}`;
+      const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
+      const url = `${base}/api/retreat-programs${editing ? `/${editing._id}` : ""}`;
 
       const res = await fetch(url, {
         method: editing ? "PUT" : "POST",

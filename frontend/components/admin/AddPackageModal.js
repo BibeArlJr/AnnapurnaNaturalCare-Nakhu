@@ -162,7 +162,8 @@ export default function AddPackageModal({ open, onClose, onSaved }) {
         if (vid) fd.append("promoVideos[]", vid);
       });
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/packages`, {
+      const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
+      const res = await fetch(`${base}/api/packages`, {
         method: "POST",
         body: fd,
         credentials: "include",

@@ -20,7 +20,7 @@ export default function RetreatProgramsPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/retreat-programs`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}/api/retreat-programs`);
         const data = await res.json().catch(() => ({}));
         const list = data?.data || data || [];
         setPrograms(list.filter((p) => p.isActive !== false));

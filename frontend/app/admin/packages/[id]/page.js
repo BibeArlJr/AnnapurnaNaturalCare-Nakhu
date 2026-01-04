@@ -189,7 +189,8 @@ export default function EditPackagePage({ params }) {
         fd.append("promoVideo", promoVideo);
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/packages/${params.id}`, {
+      const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
+      const res = await fetch(`${base}/api/packages/${params.id}`, {
         method: "PUT",
         body: fd,
         credentials: "include",

@@ -41,8 +41,8 @@ export default function RetreatProgramDetailPage({ params }) {
       setLoading(true);
       try {
         const [detailRes, listRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/retreat-programs/${slug}`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/retreat-programs`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}/api/retreat-programs/${slug}`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}/api/retreat-programs`),
         ]);
         const detailData = await detailRes.json().catch(() => ({}));
         const listData = await listRes.json().catch(() => ({}));

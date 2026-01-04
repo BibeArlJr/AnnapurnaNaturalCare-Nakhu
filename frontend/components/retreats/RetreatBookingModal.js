@@ -181,7 +181,8 @@ export default function RetreatBookingModal({ program, open, onClose }) {
     clearError("accommodation");
     setSubmitting(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/retreat-bookings`, {
+      const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
+      const res = await fetch(`${base}/api/retreat-bookings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
