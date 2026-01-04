@@ -27,9 +27,10 @@ connectDB();
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+const allowedOrigin = process.env.FRONTEND_BASE_URL || process.env.FRONTEND_URL || '';
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: allowedOrigin ? [allowedOrigin] : undefined,
     credentials: true,
   })
 );

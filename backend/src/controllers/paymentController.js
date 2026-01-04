@@ -110,6 +110,8 @@ exports.createStripeCheckout = async (req, res) => {
     if (!stripe || !process.env.STRIPE_SECRET_KEY) return fail(res, 'Stripe not configured', 500);
     const { bookingId, type } = req.body || {};
     if (!bookingId || !type) return fail(res, 'bookingId and type are required');
+    const frontendBase = process.env.FRONTEND_BASE_URL || process.env.FRONTEND_URL || '';
+    if (!frontendBase) return fail(res, 'Frontend base URL not configured', 500);
 
     let bookingDoc = null;
     let totalUSD = 0;
@@ -201,8 +203,8 @@ exports.createStripeCheckout = async (req, res) => {
           },
         },
       ],
-      success_url: `${process.env.FRONTEND_BASE_URL || 'http://localhost:3000'}/payment-success?booking=${bookingId}&type=${type}`,
-      cancel_url: `${process.env.FRONTEND_BASE_URL || 'http://localhost:3000'}/payment-cancelled?booking=${bookingId}&type=${type}`,
+      success_url: `${frontendBase}/payment-success?booking=${bookingId}&type=${type}`,
+      cancel_url: `${frontendBase}/payment-cancelled?booking=${bookingId}&type=${type}`,
     });
 
     return res.json({ success: true, url: session.url });

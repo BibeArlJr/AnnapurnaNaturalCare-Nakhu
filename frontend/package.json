@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start -p 3000"
+  },
+  "engines": {
+    "node": "20.x"
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.16",

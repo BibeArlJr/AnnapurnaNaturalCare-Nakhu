@@ -1,10 +1,5 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/courses/page": "app/courses/page.js",
-  "/courses/[slug]/page": "app/courses/[slug]/page.js",
-  "/health-programs/page": "app/health-programs/page.js",
   "/page": "app/page.js",
-  "/health-programs/[slug]/page": "app/health-programs/[slug]/page.js",
-  "/admin/reviews/page": "app/admin/reviews/page.js",
-  "/admin/retreat-programs/page": "app/admin/retreat-programs/page.js"
+  "/admin/page": "app/admin/page.js",
+  "/admin/login/page": "app/admin/login/page.js"
 }

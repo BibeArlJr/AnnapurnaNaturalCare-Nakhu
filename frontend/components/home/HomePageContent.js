@@ -25,7 +25,7 @@ const fadeUp = (delay = 0) => ({
   },
 });
 
-const sectionWrapper = "py-20";
+const sectionWrapper = "py-14";
 const sectionContainer = "max-w-7xl mx-auto px-4";
 
 export default function HomePageContent() {
@@ -176,53 +176,41 @@ export default function HomePageContent() {
 
   return (
     <>
-      <section
-        className="relative min-h-[75vh] flex flex-col items-center pt-24 pb-24 bg-white"
-      >
-        <div className="w-full max-w-5xl px-6 text-center flex flex-col items-center space-y-10">
+      <section className="w-full bg-[#f4f8f5]">
+        <div className="max-w-6xl mx-auto px-4 min-h-[75vh] flex flex-col items-center justify-center text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: "easeOut" }}
             viewport={{ once: true }}
-            className="space-y-8"
+            className="space-y-6"
           >
-            <p className="text-xs tracking-[0.2em] uppercase text-[#2F8D59]">
-              Holistic Healing · Kathmandu
-            </p>
+            <p className="tracking-wide text-sm text-green-700">HOLISTIC HEALING · KATHMANDU</p>
 
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-[#1b3c32] leading-snug md:whitespace-nowrap">
+            <h1 className="text-3xl md:text-5xl font-semibold leading-tight text-gray-900">
               Your path to natural healing begins here.
             </h1>
 
-            <p className="text-sm md:text-base text-[#3f4d44] leading-relaxed">
-              We combine naturopathy, yoga, Ayurveda, physiotherapy and lifestyle medicine
-              to treat the root cause of disease – not just the symptoms.
+            <p className="max-w-3xl mx-auto text-gray-600 text-base md:text-lg">
+              We combine naturopathy, yoga, Ayurveda, physiotherapy and lifestyle medicine to treat the root cause of
+              disease — not just the symptoms.
             </p>
 
-            <div className="w-full max-w-3xl mx-auto flex flex-wrap gap-6 justify-center mt-14 md:mt-20 mb-10 md:mb-16">
-              <Link
-                href="/appointments"
-                className="inline-flex items-center justify-center px-5 py-3 rounded-full bg-[#2F8D59] text-white text-sm font-medium shadow-sm hover:bg-[#256b46] transition"
-              >
+            <div className="flex flex-wrap justify-center gap-4">
+              <Link href="/appointments" className="px-6 py-3 rounded-full bg-green-700 text-white">
                 Book an appointment
               </Link>
 
-              <Link
-                href="/packages"
-                className="inline-flex items-center justify-center px-5 py-3 rounded-full border border-[#b7e0c5] text-[#2F8D59] text-sm font-medium bg-white hover:border-[#2F8D59] transition"
-              >
+              <Link href="/packages" className="px-6 py-3 rounded-full border border-green-700 text-green-700">
                 View health packages
               </Link>
             </div>
           </motion.div>
-
         </div>
-
       </section>
 
       {/* QUICK ACCESS CARDS – subtle background */}
-      <section className={`${sectionWrapper} bg-[#ecf3ee] pt-32`}>
+      <section className={`${sectionWrapper} bg-[#ecf3ee] pt-12`}>
         <div className={sectionContainer}>
           <motion.div {...fadeUp(0)} className="mb-6">
             <h2 className="text-xl md:text-2xl font-semibold text-[#10231a] mb-1">
