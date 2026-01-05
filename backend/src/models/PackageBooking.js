@@ -49,6 +49,11 @@ const PackageBookingSchema = new mongoose.Schema(
       default: 'pending',
     },
     adminMessage: { type: String },
+    unseen: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
   },
   { timestamps: true }
 );

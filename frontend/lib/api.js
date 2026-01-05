@@ -1,5 +1,5 @@
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
-const BASE_URL = `${API_BASE}/api`;
+const BASE_URL = API_BASE.endsWith('/api') ? API_BASE : `${API_BASE}/api`;
 
 async function handleResponse(res) {
   const data = await res.json().catch(() => ({}));

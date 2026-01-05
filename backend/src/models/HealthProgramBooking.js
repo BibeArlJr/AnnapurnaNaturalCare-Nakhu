@@ -19,6 +19,11 @@ const HealthProgramBookingSchema = new mongoose.Schema(
     paymentGateway: { type: String, enum: ['stripe', 'cash', null], default: null },
     adminMessage: { type: String },
     notes: { type: String },
+    unseen: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
   },
   { timestamps: true }
 );

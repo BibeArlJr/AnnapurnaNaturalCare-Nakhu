@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { apiDelete, apiGet, apiPut } from "@/lib/api";
+import { apiDelete, apiGet, apiPut, apiPatch } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/errorMessage";
 import { PencilSquareIcon, CheckCircleIcon, XCircleIcon, ArrowPathIcon, TrashIcon } from "@heroicons/react/24/outline";
 
@@ -64,6 +64,7 @@ export default function AdminRetreatBookingsPage() {
 
   useEffect(() => {
     load();
+    apiPatch("/admin/mark-seen?type=retreatBookings").catch(() => {});
   }, []);
 
   const startEdit = (item) => {

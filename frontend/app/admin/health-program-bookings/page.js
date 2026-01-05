@@ -63,6 +63,7 @@ export default function HealthProgramBookingsAdminPage() {
       }
     }
     load();
+    apiPatch("/admin/mark-seen?type=healthPrograms").catch(() => {});
   }, []);
 
   useEffect(() => {

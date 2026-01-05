@@ -65,6 +65,7 @@ export default function CourseBookingsAdminPage() {
       }
     }
     load();
+    apiPatch("/admin/mark-seen?type=courses").catch(() => {});
   }, []);
 
   useEffect(() => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { apiGet, apiDelete, apiPut } from "@/lib/api";
+import { apiGet, apiDelete, apiPut, apiPatch } from "@/lib/api";
 import dayjs from "dayjs";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { getApiErrorMessage } from "@/lib/errorMessage";
@@ -73,6 +73,7 @@ export default function PackageBookingsAdminPage() {
       }
     }
     load();
+    apiPatch("/admin/mark-seen?type=healthPackages").catch(() => {});
   }, []);
 
   const startEdit = (item) => {

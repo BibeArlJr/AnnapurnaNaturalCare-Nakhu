@@ -13,7 +13,6 @@ const retreatProgramRoutes = require('./api/retreatProgramRoutes');
 const retreatBookingRoutes = require('./api/retreatBookingRoutes');
 const retreatDestinationRoutes = require('./api/retreatDestinationRoutes');
 const treatmentTypeRoutes = require('./api/treatmentTypeRoutes');
-const messageRoutes = require('./api/messageRoutes');
 const contactRoutes = require('./api/contactRoutes');
 const authRoutes = require('./api/authRoutes');
 const adminPaymentRoutes = require('./api/adminPaymentRoutes');
@@ -27,6 +26,7 @@ const courseRoutes = require('./api/courseRoutes');
 const courseCategoryRoutes = require('./api/courseCategoryRoutes');
 const courseBookingRoutes = require('./api/courseBookingRoutes');
 const heroImageRoutes = require('./api/heroImageRoutes');
+const adminNotificationRoutes = require('./api/adminNotificationRoutes');
 
 const router = express.Router();
 
@@ -52,9 +52,9 @@ router.use('/courses', courseRoutes);
 router.use('/course-categories', courseCategoryRoutes);
 router.use('/course-bookings', courseBookingRoutes);
 router.use('/hero-images', heroImageRoutes);
+router.use('/admin', adminNotificationRoutes);
 router.use('/retreat-destinations', retreatDestinationRoutes);
 router.use('/treatment-types', treatmentTypeRoutes);
-router.use('/messages', messageRoutes);
 router.use('/contact', contactRoutes);
 router.use('/auth', authRoutes);
 router.use('/admin/payments', adminPaymentRoutes);

@@ -20,6 +20,11 @@ const CourseBookingSchema = new mongoose.Schema(
     transactionId: { type: String },
     adminMessage: { type: String },
     notes: { type: String },
+    unseen: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
   },
   { timestamps: true }
 );

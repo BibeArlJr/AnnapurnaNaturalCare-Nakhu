@@ -3,14 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
-import {
-  UsersIcon,
-  BuildingOfficeIcon,
-  CalendarDaysIcon,
-  EnvelopeOpenIcon,
-  ArrowPathIcon,
-  PlusCircleIcon,
-} from "@heroicons/react/24/outline";
+import { UsersIcon, BuildingOfficeIcon, CalendarDaysIcon, ArrowPathIcon, PlusCircleIcon } from "@heroicons/react/24/outline";
 
 function formatTime(t) {
   if (!t) return "";
@@ -41,10 +34,8 @@ export default function AdminDashboardPage() {
     departmentsCount: 0,
     doctorsCount: 0,
     upcomingAppointmentsCount: 0,
-    messagesCount: 0,
   });
   const [recentAppointments, setRecentAppointments] = useState([]);
-  const [recentMessages, setRecentMessages] = useState([]);
   const [tomorrowAppointments, setTomorrowAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -61,19 +52,15 @@ export default function AdminDashboardPage() {
       setLoading(true);
       setError(null);
       try {
-        const [departmentsRes, doctorsRes, appointmentsRes, messagesRes] =
-          await Promise.all([
-            apiGet("/departments"),
-            apiGet("/doctors"),
-            apiGet("/appointments"),
-            apiGet("/contact"), // contact messages
-          ]);
+        const [departmentsRes, doctorsRes, appointmentsRes] = await Promise.all([
+          apiGet("/departments"),
+          apiGet("/doctors"),
+          apiGet("/appointments"),
+        ]);
 
         const departments = departmentsRes?.data || [];
         const doctors = doctorsRes?.data || [];
         const appointments = appointmentsRes?.data || [];
-        const messages = messagesRes?.data || [];
-
         const now = new Date();
         const upcomingAppointments = appointments.filter((a) => {
           if (!a.date) return false;
@@ -97,19 +84,12 @@ export default function AdminDashboardPage() {
           .sort((a, b) => new Date(b.date) - new Date(a.date))
           .slice(0, 5);
 
-        const recentMessagesList = [...messages]
-          .filter((m) => m.createdAt)
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-          .slice(0, 5);
-
         setStats({
           departmentsCount: departments.length,
           doctorsCount: doctors.length,
           upcomingAppointmentsCount: upcomingAppointments.length,
-          messagesCount: messages.length,
         });
         setRecentAppointments(recentAppointmentsList);
-        setRecentMessages(recentMessagesList);
         setTomorrowAppointments(tomorrowList);
       } catch (err) {
         console.error("Failed to load dashboard data", err);
@@ -164,17 +144,11 @@ export default function AdminDashboardPage() {
           value={stats.upcomingAppointmentsCount}
           hint="From today onwards"
         />
-        <DashboardStatCard
-          icon={EnvelopeOpenIcon}
-          label="Messages"
-          value={stats.messagesCount}
-          hint="Contact form submissions"
-        />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <TomorrowAppointments tomorrowAppointments={tomorrowAppointments} />
-        <RecentMessages recentMessages={recentMessages} />
+        <RecentAppointments recentAppointments={recentAppointments} />
       </div>
     </div>
   );
@@ -225,42 +199,6 @@ function DashboardStatCard({ icon: Icon, label, value, hint }) {
   );
 }
 
-function RecentMessages({ recentMessages }) {
-  return (
-    <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-slate-100">Latest messages</h2>
-        <Link href="/admin/messages" className="text-xs text-teal-400 hover:text-teal-300">
-          View all
-        </Link>
-      </div>
-      {recentMessages.length === 0 ? (
-        <p className="text-xs text-slate-500">No messages found.</p>
-      ) : (
-        <ul className="divide-y divide-slate-800">
-          {recentMessages.map((msg) => (
-            <li key={msg._id} className="py-2">
-              <p className="text-sm text-slate-100">
-                {msg.name || 'Visitor'}{' '}
-                {msg.createdAt && (
-                  <span className="text-xs text-slate-500">
-                    · {new Date(msg.createdAt).toLocaleDateString()}
-                  </span>
-                )}
-              </p>
-              {msg.message && (
-                <p className="text-xs text-slate-400 mt-1 line-clamp-1">
-                  {msg.message}
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
 function TomorrowAppointments({ tomorrowAppointments }) {
   return (
     <section className="border border-white/5 bg-[#0e1217] rounded-xl p-6 space-y-3">
@@ -283,6 +221,33 @@ function TomorrowAppointments({ tomorrowAppointments }) {
       >
         View full calendar →
       </Link>
+    </section>
+  );
+}
+
+function RecentAppointments({ recentAppointments }) {
+  return (
+    <section className="border border-white/5 bg-[#0e1217] rounded-xl p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-white">Recent Appointments</h3>
+        <Link href="/admin/appointments" className="text-teal-400 text-sm hover:underline">
+          View all
+        </Link>
+      </div>
+      {recentAppointments.length === 0 ? (
+        <p className="text-gray-400 text-sm">No recent appointments.</p>
+      ) : (
+        <ul className="space-y-2 text-gray-300 text-sm">
+          {recentAppointments.map((appt) => (
+            <li key={appt._id} className="flex justify-between">
+              <span>{appt.patientName || "Patient"} · {appt.doctorName || appt.doctor?.name || "Doctor"}</span>
+              <span className="text-gray-500 text-xs">
+                {appt.date ? new Date(appt.date).toLocaleDateString() : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

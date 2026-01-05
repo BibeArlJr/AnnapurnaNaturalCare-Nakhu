@@ -49,6 +49,11 @@ const RetreatBookingSchema = new mongoose.Schema(
       default: 'pending',
     },
     adminMessage: { type: String },
+    unseen: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
   },
   { timestamps: { createdAt: true, updatedAt: true } }
 );
