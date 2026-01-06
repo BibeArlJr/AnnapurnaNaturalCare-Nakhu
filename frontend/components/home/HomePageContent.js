@@ -91,7 +91,7 @@ export default function HomePageContent() {
           price: pkg.price ? `$${pkg.price}` : "",
           duration,
           image,
-          href: `/pack/${pkg.slug || pkg._id}`,
+          href: `/packages/${pkg.slug || pkg._id}`,
           tag: "Health package",
         };
       }) || [];

@@ -1,6 +1,17 @@
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 const BASE_URL = API_BASE.endsWith('/api') ? API_BASE : `${API_BASE}/api`;
 
+export function buildApiUrl(path = '') {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const url = `${BASE_URL}${cleanPath}`;
+  // Log the final URL so we can verify no duplicate /api segments.
+  // eslint-disable-next-line no-console
+  console.log('[api] request url:', url);
+  return url;
+}
+
+export const API_BASE_URL = BASE_URL;
+
 async function handleResponse(res) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -13,7 +24,7 @@ async function handleResponse(res) {
 }
 
 export async function apiGet(path) {
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(buildApiUrl(path), {
     method: 'GET',
     credentials: 'include',
   });
@@ -22,7 +33,7 @@ export async function apiGet(path) {
 
 export async function apiPost(path, body) {
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(buildApiUrl(path), {
     method: 'POST',
     credentials: 'include',
     headers: isFormData ? undefined : { 'Content-Type': 'application/json' },
@@ -33,7 +44,7 @@ export async function apiPost(path, body) {
 
 export async function apiPut(path, body) {
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(buildApiUrl(path), {
     method: 'PUT',
     credentials: 'include',
     headers: isFormData ? undefined : { 'Content-Type': 'application/json' },
@@ -43,7 +54,7 @@ export async function apiPut(path, body) {
 }
 
 export async function apiDelete(path) {
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(buildApiUrl(path), {
     method: 'DELETE',
     credentials: 'include',
   });
@@ -51,7 +62,7 @@ export async function apiDelete(path) {
 }
 
 export async function apiPatch(path, body) {
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(buildApiUrl(path), {
     method: 'PATCH',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },

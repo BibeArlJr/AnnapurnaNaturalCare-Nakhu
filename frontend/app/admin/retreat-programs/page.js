@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { apiDelete, apiGet, apiPatch, apiPut } from "@/lib/api";
+import { apiDelete, apiGet, apiPatch, apiPut, buildApiUrl } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/errorMessage";
 import { PlusIcon, PencilSquareIcon, TrashIcon, BoltIcon } from "@heroicons/react/24/outline";
 import { PublishToggle, StatusPill } from "@/components/admin/PublishToggle";
@@ -369,8 +369,7 @@ export default function RetreatProgramsPage() {
         .filter((g) => g.file)
         .forEach((g) => fd.append("galleryImages", g.file));
 
-      const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
-      const url = `${base}/api/retreat-programs${editing ? `/${editing._id}` : ""}`;
+      const url = buildApiUrl(`/retreat-programs${editing ? `/${editing._id}` : ""}`);
 
       const res = await fetch(url, {
         method: editing ? "PUT" : "POST",

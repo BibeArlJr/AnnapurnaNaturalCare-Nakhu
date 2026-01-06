@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { apiGet } from "@/lib/api";
+import { apiGet, buildApiUrl } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/errorMessage";
 import MediaSection from "@/components/admin/MediaSection";
 import dynamic from "next/dynamic";
@@ -166,8 +166,7 @@ export default function EditPackageModal({ open, onClose, onSaved, pkg }) {
         if (vid) fd.append("promoVideos[]", vid);
       });
 
-      const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
-      const res = await fetch(`${base}/api/packages/${pkg?._id}`, {
+      const res = await fetch(buildApiUrl(`/packages/${pkg?._id}`), {
         method: "PUT",
         body: fd,
         credentials: "include",

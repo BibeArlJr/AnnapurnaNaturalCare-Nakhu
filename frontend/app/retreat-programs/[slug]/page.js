@@ -5,6 +5,7 @@ import Container from "@/components/Container";
 import Link from "next/link";
 import { getApiErrorMessage } from "@/lib/errorMessage";
 import RetreatBookingModal from "@/components/retreats/RetreatBookingModal";
+import { apiGet } from "@/lib/api";
 
 function IncludedList({ items = [], alwaysPickup }) {
   if (!items.length && !alwaysPickup) return null;
@@ -40,15 +41,10 @@ export default function RetreatProgramDetailPage({ params }) {
       if (!slug) return;
       setLoading(true);
       try {
-        const [detailRes, listRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}/api/retreat-programs/${slug}`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}/api/retreat-programs`),
-        ]);
-        const detailData = await detailRes.json().catch(() => ({}));
-        const listData = await listRes.json().catch(() => ({}));
+        const [detailRes, listRes] = await Promise.all([apiGet(`/retreat-programs/${slug}`), apiGet("/retreat-programs")]);
 
-        const item = detailData?.data || detailData;
-        const allPrograms = listData?.data || listData || [];
+        const item = detailRes?.data || detailRes;
+        const allPrograms = listRes?.data || listRes || [];
         const filtered =
           item && item._id
             ? allPrograms.filter((p) => p._id !== item._id && p.slug !== item.slug)

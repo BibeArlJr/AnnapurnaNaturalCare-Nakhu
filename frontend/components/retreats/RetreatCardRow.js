@@ -5,7 +5,8 @@ import Link from "next/link";
 export default function RetreatCardRow({ program, onBook }) {
   const cover = program.coverImage || program.galleryImages?.[0] || "";
   const priceLabel = program.pricePerPersonUSD ? `$${program.pricePerPersonUSD} / person` : "Contact for pricing";
-  const typeLabel = program.programType === "inside_valley" ? "Inside Valley" : "Outside Valley";
+  const typeLabel =
+    program.programType === "outside_valley" ? "Outside Valley" : "Inside Valley";
   const destinations = (program.destinations || []).map((d) => (typeof d === "string" ? d : d?.name)).filter(Boolean);
 
   const included = Array.isArray(program.included)
@@ -13,6 +14,11 @@ export default function RetreatCardRow({ program, onBook }) {
     : typeof program.included === "string"
     ? program.included.split(/[,\\n]+/).map((s) => s.trim()).filter(Boolean)
     : [];
+
+  const badges = [
+    program.status === "draft" ? { label: "Draft", tone: "bg-amber-100 text-amber-800 border-amber-200" } : null,
+    program.isActive === false ? { label: "Inactive", tone: "bg-rose-100 text-rose-800 border-rose-200" } : null,
+  ].filter(Boolean);
 
   return (
     <div className="bg-white border border-[#dfe8e2] rounded-2xl p-4 md:p-5 shadow-sm hover:shadow-lg hover:shadow-[#2F8D59]/10 transition flex flex-col md:flex-row gap-4 md:gap-6">
@@ -25,6 +31,14 @@ export default function RetreatCardRow({ program, onBook }) {
           <span className="px-2 py-1 rounded-full bg-[#e6f2ea] text-[#2F8D59] text-xs font-semibold border border-[#cfe8d6]">
             {typeLabel}
           </span>
+          {badges.map((b) => (
+            <span
+              key={b.label}
+              className={`px-2 py-1 rounded-full text-[11px] font-semibold border ${b.tone}`}
+            >
+              {b.label}
+            </span>
+          ))}
         </div>
         {program.descriptionShort ? (
           <p className="text-sm text-[#4c5f68] leading-relaxed line-clamp-3">{program.descriptionShort}</p>

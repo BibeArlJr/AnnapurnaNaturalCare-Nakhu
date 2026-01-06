@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiPost } from "@/lib/api";
+import { apiPost, buildApiUrl } from "@/lib/api";
 import AssociationSelect from "@/components/admin/AssociationSelect";
 import dynamic from "next/dynamic";
 import "react-quill/dist/quill.snow.css";
@@ -40,8 +40,7 @@ export default function NewReviewPage() {
         const fd = new FormData();
         fd.append("image", file);
         fd.append("folder", folder);
-        const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
-        const res = await fetch(`${base}/api/upload`, {
+        const res = await fetch(buildApiUrl("/upload"), {
           method: "POST",
           body: fd,
           credentials: "include",

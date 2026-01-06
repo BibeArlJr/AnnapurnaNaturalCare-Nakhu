@@ -23,7 +23,11 @@ const RetreatBookingSchema = new mongoose.Schema(
     hotelNights: { type: Number },
     hotelTotalCost: { type: Number },
     accommodationSelected: { type: Boolean, default: false },
-    accommodationMode: { type: String, enum: ['none', 'location', 'star', 'locationAndStar'], default: 'none' },
+    accommodationMode: {
+      type: String,
+      enum: ['none', 'location', 'star', 'locationAndStar', 'hospital_standard', 'hospital_premium', 'hotel', 'tent'],
+      default: 'hospital_standard',
+    },
     selectedLocation: { type: String },
     selectedStarRating: { type: Number },
     partnerHotelId: { type: mongoose.Schema.Types.ObjectId, ref: 'PartnerHotel' },
@@ -57,5 +61,8 @@ const RetreatBookingSchema = new mongoose.Schema(
   },
   { timestamps: { createdAt: true, updatedAt: true } }
 );
+
+// Ensure we refresh the model definition if it was compiled earlier (prevents stale enums during hot reload)
+delete mongoose.connection.models['RetreatBooking'];
 
 module.exports = mongoose.model('RetreatBooking', RetreatBookingSchema);

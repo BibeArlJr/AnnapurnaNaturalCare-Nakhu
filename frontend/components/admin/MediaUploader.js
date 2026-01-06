@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { buildApiUrl } from "@/lib/api";
 
 export default function MediaUploader({
   value = [],
@@ -30,8 +31,7 @@ export default function MediaUploader({
         const fd = new FormData();
         fd.append("image", file);
         fd.append("folder", "admin-media");
-        const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
-        const res = await fetch(`${base}/api/upload`, {
+        const res = await fetch(buildApiUrl("/upload"), {
           method: "POST",
           body: fd,
           credentials: "include",

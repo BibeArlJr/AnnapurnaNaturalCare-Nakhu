@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiGet, apiPost, buildApiUrl } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/errorMessage";
 
 const inputBase = "w-full rounded-xl border px-4 py-3 text-sm focus:outline-none transition";
@@ -181,8 +181,7 @@ export default function RetreatBookingModal({ program, open, onClose }) {
     clearError("accommodation");
     setSubmitting(true);
     try {
-      const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
-      const res = await fetch(`${base}/api/retreat-bookings`, {
+      const res = await fetch(buildApiUrl("/retreat-bookings"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { apiGet, apiPut } from "@/lib/api";
+import { apiGet, apiPut, buildApiUrl } from "@/lib/api";
 import "react-quill/dist/quill.snow.css";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
@@ -128,8 +128,7 @@ export default function EditDepartmentPage({ params }) {
             const fd = new FormData();
             fd.append("image", currentFile);
             if (folder) fd.append("folder", folder);
-            const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
-            const res = await fetch(`${base}/api/upload`, {
+            const res = await fetch(buildApiUrl("/upload"), {
               method: "POST",
               body: fd,
               credentials: "include",

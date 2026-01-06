@@ -5,6 +5,7 @@ import Container from "@/components/Container";
 import RetreatBookingModal from "@/components/retreats/RetreatBookingModal";
 import RetreatCardRow from "@/components/retreats/RetreatCardRow";
 import Link from "next/link";
+import { apiGet } from "@/lib/api";
 
 const TABS = [
   { key: "inside_valley", label: "Inside Valley Retreats" },
@@ -20,10 +21,13 @@ export default function RetreatProgramsPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}/api/retreat-programs`);
-        const data = await res.json().catch(() => ({}));
-        const list = data?.data || data || [];
-        setPrograms(list.filter((p) => p.isActive !== false));
+        const res = await apiGet("/retreat-programs");
+        const list = res?.data || res || [];
+        const normalized = list.map((p) => ({
+          ...p,
+          programType: p.programType || "inside_valley",
+        }));
+        setPrograms(normalized);
       } catch (err) {
         console.error("Retreat programs load error:", err);
       } finally {
@@ -33,10 +37,7 @@ export default function RetreatProgramsPage() {
     load();
   }, []);
 
-  const filtered = useMemo(
-    () => programs.filter((p) => p.programType === activeTab),
-    [programs, activeTab]
-  );
+  const filtered = useMemo(() => programs.filter((p) => (p.programType || "inside_valley") === activeTab), [programs, activeTab]);
 
   return (
     <div className="bg-[#f5f8f4] min-h-screen">

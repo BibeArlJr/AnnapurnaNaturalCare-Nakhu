@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { XMarkIcon, PhotoIcon, FilmIcon, LinkIcon } from "@heroicons/react/24/solid";
-import { apiPost, apiPut } from "@/lib/api";
+import { apiPost, apiPut, buildApiUrl } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/errorMessage";
 
 export default function AddGalleryModal({ open, onClose, onSaved, initialData = null }) {
@@ -46,8 +46,7 @@ export default function AddGalleryModal({ open, onClose, onSaved, initialData = 
           const fd = new FormData();
           fd.append("image", file);
           fd.append("folder", folder);
-          const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
-          const res = await fetch(`${base}/api/upload`, {
+          const res = await fetch(buildApiUrl("/upload"), {
             method: "POST",
             body: fd,
             credentials: "include",

@@ -1,5 +1,6 @@
 import BlogHero from '@/components/blog/BlogHero';
 import BlogGrid from '@/components/blog/BlogGrid';
+import { buildApiUrl } from '@/lib/api';
 
 export const metadata = {
   title: 'Health & Wellness Insights | Annapurna Nature Cure Hospital',
@@ -13,10 +14,7 @@ export default async function BlogPage() {
   let blogs = [];
 
   try {
-    const baseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
-    if (!baseUrl) throw new Error('API base URL not configured');
-
-    const res = await fetch(`${baseUrl}/api/blogs`, { cache: 'no-store' });
+    const res = await fetch(buildApiUrl('/blogs'), { cache: 'no-store' });
     if (!res.ok) {
       throw new Error(`Failed to fetch blogs (${res.status})`);
     }

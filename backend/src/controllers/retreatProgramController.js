@@ -161,13 +161,16 @@ exports.getAll = async (_req, res) => {
   try {
     const { status, includeDrafts } = _req.query || {};
     const query = {};
+    const hasQueryParams = Object.keys(_req.query || {}).length > 0;
 
-    if (includeDrafts === 'true' || status === 'all') {
-      // no status filter
-    } else if (status) {
-      query.status = status;
-    } else {
-      query.status = 'published';
+    if (hasQueryParams) {
+      if (includeDrafts === 'true' || status === 'all') {
+        // no status filter when explicitly requesting drafts/all
+      } else if (status) {
+        query.status = status;
+      } else {
+        query.status = 'published';
+      }
     }
 
     const items = await RetreatProgram.find(query)

@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiGet } from "@/lib/api";
+import { apiGet, buildApiUrl } from "@/lib/api";
 import MultiSelect from "@/components/ui/MultiSelect";
 import dynamic from "next/dynamic";
 import "react-quill/dist/quill.snow.css";
@@ -189,8 +189,7 @@ export default function EditPackagePage({ params }) {
         fd.append("promoVideo", promoVideo);
       }
 
-      const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
-      const res = await fetch(`${base}/api/packages/${params.id}`, {
+      const res = await fetch(buildApiUrl(`/packages/${params.id}`), {
         method: "PUT",
         body: fd,
         credentials: "include",
